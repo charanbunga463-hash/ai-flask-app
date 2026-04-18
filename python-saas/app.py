@@ -1,6 +1,5 @@
 from flask import Flask, request, render_template, redirect, session
 import sqlite3
-from datetime import datetime
 import os
 from dotenv import load_dotenv
 
@@ -8,10 +7,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("9f8sd7f98sdf7sdf98sdf7sdf98sdf", "fallback_secret")
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
 # ---------------- AI SETUP (GROQ) ----------------
 from openai import OpenAI
+
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
@@ -20,7 +20,7 @@ client = OpenAI(
 def query_ai(prompt):
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # fast + free
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300
         )
@@ -35,9 +35,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT UNIQUE,
-                  password TEXT,
-                  usage_count INTEGER DEFAULT 0,
-                  last_used TEXT)''')
+                  password TEXT)''')
     conn.commit()
     conn.close()
 
@@ -48,7 +46,7 @@ init_db()
 @app.route("/")
 def home():
     if "user" in session:
-        return render_template("dashboard.html", user=session["user"], count=0)
+        return render_template("dashboard.html", user=session["user"], count="Unlimited")
     return redirect("/login")
 
 # LOGIN
@@ -90,47 +88,18 @@ def register():
 
     return render_template("register.html")
 
-# TOOL
+# TOOL (NO LIMIT)
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
         return redirect("/login")
 
     user = session["user"]
-    today = datetime.now().strftime("%Y-%m-%d")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-    c.execute("SELECT usage_count, last_used FROM users WHERE username=?", (user,))
-    data = c.fetchone()
-
-    if not data:
-        conn.close()
-        return "User not found"
-
-    usage_count, last_used = data
-
-    # Reset daily usage
-    if last_used != today:
-        usage_count = 0
-
-    # Limit check
-    if usage_count >= 50:
-        conn.close()
-        return "Daily limit reached (50 requests)"
-
     user_input = request.form.get("input")
 
     result = query_ai(f"Answer clearly: {user_input}")
 
-    # Update usage
-    usage_count += 1
-    c.execute("UPDATE users SET usage_count=?, last_used=? WHERE username=?",
-              (usage_count, today, user))
-    conn.commit()
-    conn.close()
-
-    return render_template("dashboard.html", user=user, output=result, count=usage_count)
+    return render_template("dashboard.html", user=user, output=result, count="Unlimited")
 
 # LOGOUT
 @app.route("/logout")

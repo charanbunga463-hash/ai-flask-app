@@ -115,9 +115,9 @@ def tool():
         usage_count = 0
 
     # Limit check
-    if usage_count >= 5:
+    if usage_count >= 50:
         conn.close()
-        return "Daily limit reached (5 requests)"
+        return "Daily limit reached (50 requests)"
 
     user_input = request.form.get("input")
 

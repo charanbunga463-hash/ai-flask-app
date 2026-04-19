@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect, session
 import sqlite3
 import os
 from dotenv import load_dotenv
-import markdown   # ✅ NEW
+import markdown
 
 # Load env
 load_dotenv()
@@ -18,14 +18,21 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
+# ✅ FIXED: No previous context mixing
 def query_ai(prompt):
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{
-                "role": "user",
-                "content": f"Answer clearly using markdown (use bullets if needed):\n{prompt}"
-            }],
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Answer ONLY the current question. Do NOT include previous answers or context."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
             max_tokens=300
         )
         return response.choices[0].message.content
@@ -58,7 +65,15 @@ init_db()
 @app.route("/")
 def home():
     if "user" in session:
-        return render_template("dashboard.html", user=session["user"], count="Unlimited")
+        if "chat" not in session:
+            session["chat"] = []
+
+        return render_template(
+            "dashboard.html",
+            user=session["user"],
+            chat=session["chat"],
+            count="Unlimited"
+        )
     return redirect("/login")
 
 
@@ -79,6 +94,7 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
+            session["chat"] = []  # reset chat
             return redirect("/")
         else:
             error = "Invalid username or password"
@@ -114,7 +130,9 @@ def tool():
     if "user" not in session:
         return redirect("/login")
 
-    user = session["user"]
+    if "chat" not in session:
+        session["chat"] = []
+
     user_input = request.form.get("input")
 
     # -------- IMAGE --------
@@ -122,31 +140,35 @@ def tool():
     if any(k in user_input.lower() for k in keywords):
         image_url = generate_image(user_input)
 
-        return render_template(
-            "dashboard.html",
-            user=user,
-            image=image_url,
-            count="Unlimited"
-        )
+        session["chat"].append({
+            "type": "image",
+            "user": user_input,
+            "image": image_url
+        })
+
+        session.modified = True
+        return redirect("/")
 
     # -------- TEXT --------
     result = query_ai(user_input)
-
-    # ✅ Convert markdown → HTML
     formatted_output = markdown.markdown(result)
 
-    return render_template(
-        "dashboard.html",
-        user=user,
-        output=formatted_output,
-        count="Unlimited"
-    )
+    session["chat"].append({
+        "type": "text",
+        "user": user_input,
+        "bot": formatted_output
+    })
+
+    session.modified = True
+
+    return redirect("/")
 
 
 # ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.pop("user", None)
+    session.pop("chat", None)
     return redirect("/login")
 
 

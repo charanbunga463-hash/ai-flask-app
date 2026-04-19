@@ -28,6 +28,14 @@ def query_ai(prompt):
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+# ---------------- IMAGE GENERATION (FREE) ----------------
+def generate_image(prompt):
+    # Pollinations (no API key required)
+    prompt = prompt.replace(" ", "%20")
+    return f"https://image.pollinations.ai/prompt/{prompt}"
+
+
 # ---------------- DATABASE ----------------
 def init_db():
     conn = sqlite3.connect("users.db")
@@ -41,6 +49,7 @@ def init_db():
 
 init_db()
 
+
 # ---------------- ROUTES ----------------
 
 @app.route("/")
@@ -48,6 +57,7 @@ def home():
     if "user" in session:
         return render_template("dashboard.html", user=session["user"], count="Unlimited")
     return redirect("/login")
+
 
 # LOGIN
 @app.route("/login", methods=["GET", "POST"])
@@ -69,6 +79,7 @@ def login():
 
     return render_template("login.html")
 
+
 # REGISTER
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -88,7 +99,8 @@ def register():
 
     return render_template("register.html")
 
-# TOOL (NO LIMIT)
+
+# TOOL (TEXT + IMAGE)
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -97,15 +109,35 @@ def tool():
     user = session["user"]
     user_input = request.form.get("input")
 
+    # -------- IMAGE DETECTION --------
+    keywords = ["image", "generate image", "draw", "picture", "photo"]
+    if any(k in user_input.lower() for k in keywords):
+        image_url = generate_image(user_input)
+
+        return render_template(
+            "dashboard.html",
+            user=user,
+            image=image_url,
+            count="Unlimited"
+        )
+
+    # -------- TEXT AI --------
     result = query_ai(f"Answer clearly: {user_input}")
 
-    return render_template("dashboard.html", user=user, output=result, count="Unlimited")
+    return render_template(
+        "dashboard.html",
+        user=user,
+        output=result,
+        count="Unlimited"
+    )
+
 
 # LOGOUT
 @app.route("/logout")
 def logout():
     session.pop("user", None)
     return redirect("/login")
+
 
 # RUN
 if __name__ == "__main__":

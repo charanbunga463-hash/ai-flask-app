@@ -18,14 +18,21 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
+# ✅ FIXED: No previous context mixing
 def query_ai(prompt):
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{
-                "role": "user",
-                "content": f"Answer clearly using markdown (use bullets if needed):\n{prompt}"
-            }],
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Answer ONLY the current question. Do NOT include previous answers or context."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
             max_tokens=300
         )
         return response.choices[0].message.content
@@ -59,7 +66,7 @@ init_db()
 def home():
     if "user" in session:
         if "chat" not in session:
-            session["chat"] = []   # ✅ INIT CHAT
+            session["chat"] = []
 
         return render_template(
             "dashboard.html",
@@ -87,7 +94,7 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session["chat"] = []  # ✅ RESET CHAT ON LOGIN
+            session["chat"] = []  # reset chat
             return redirect("/")
         else:
             error = "Invalid username or password"
@@ -140,7 +147,7 @@ def tool():
         })
 
         session.modified = True
-        return redirect("/")  # ✅ IMPORTANT
+        return redirect("/")
 
     # -------- TEXT --------
     result = query_ai(user_input)
@@ -154,14 +161,14 @@ def tool():
 
     session.modified = True
 
-    return redirect("/")  # ✅ IMPORTANT
+    return redirect("/")
 
 
 # ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.pop("user", None)
-    session.pop("chat", None)  # ✅ CLEAR CHAT
+    session.pop("chat", None)
     return redirect("/login")
 
 

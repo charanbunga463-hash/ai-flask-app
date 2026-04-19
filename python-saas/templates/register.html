@@ -1,10 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Register</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<div class="container mt-5">
-  <h2>Register</h2>
+<style>
+body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.card {
+    background-color: #1e293b;
+    border: none;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.input-box {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    color: white;
+}
+
+.input-box::placeholder {
+    color: #94a3b8;
+}
+
+.btn-ai {
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    border: none;
+}
+
+.btn-ai:hover {
+    opacity: 0.9;
+}
+
+.small-text {
+    color: #94a3b8;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card p-4 shadow">
+
+  <div class="text-center mb-3">
+    <h3>🚀 Create Account</h3>
+    <p class="small-text">Start using your AI workspace</p>
+  </div>
+
   <form method="POST">
-    <input class="form-control mb-2" name="username" placeholder="Username">
-    <input class="form-control mb-2" type="password" name="password" placeholder="Password">
-    <button class="btn btn-success">Register</button>
+    <input class="form-control input-box mb-3" name="username" placeholder="Username" required>
+    <input class="form-control input-box mb-3" type="password" name="password" placeholder="Password" required>
+
+    <button class="btn btn-ai text-white w-100">Register</button>
   </form>
+
+  <div class="text-center mt-3">
+    <span class="small-text">Already have an account?</span><br>
+    <a href="/login" class="text-info">Login</a>
+  </div>
+
 </div>
+
+</body>
+</html>

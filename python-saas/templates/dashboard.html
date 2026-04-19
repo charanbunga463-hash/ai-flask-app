@@ -15,7 +15,7 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Center mode (before asking) */
+/* Center mode */
 .center-mode {
     display: flex;
     justify-content: center;
@@ -23,7 +23,7 @@ body {
     height: 100vh;
 }
 
-/* Chat mode (after asking) */
+/* Chat mode */
 .chat-container {
     max-width: 800px;
     margin: auto;
@@ -44,11 +44,9 @@ body {
     background-color: #1e293b;
 }
 
-/* UI */
 .card {
     background-color: #1e293b;
     border-radius: 15px;
-    border: none;
 }
 
 .input-box {
@@ -59,7 +57,6 @@ body {
 
 .btn-ai {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: none;
 }
 
 .response-box {
@@ -127,7 +124,21 @@ body {
 
     {% if output %}
     <div class="response-box">
-      {{ output | safe }}
+
+      {% if '\n' in output and ('-' in output or '*' in output or '•' in output) %}
+        <!-- Bullet format -->
+        <ul style="padding-left:20px; margin:0;">
+          {% for line in output.split('\n') %}
+            {% if line.strip() %}
+              <li>{{ line.lstrip('-*• ').strip() }}</li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <!-- Paragraph format -->
+        <div>{{ output }}</div>
+      {% endif %}
+
     </div>
     {% endif %}
 

@@ -52,6 +52,8 @@ body {
     padding: 15px;
     margin-top: 15px;
     border: 1px solid #ffffff;
+    color: #ffffff;           /* ✅ FIX: force white text */
+    white-space: pre-wrap;   /* ✅ keeps formatting */
 }
 
 .header {
@@ -101,7 +103,7 @@ body {
     <!-- Output -->
     {% if output %}
       <div class="response-box">
-        {{output}}
+        {{ output | safe }}
       </div>
     {% endif %}
 

@@ -29,9 +29,8 @@ def query_ai(prompt):
         return f"Error: {str(e)}"
 
 
-# ---------------- IMAGE GENERATION (FREE) ----------------
+# ---------------- IMAGE GENERATION ----------------
 def generate_image(prompt):
-    # Pollinations (no API key required)
     prompt = prompt.replace(" ", "%20")
     return f"https://image.pollinations.ai/prompt/{prompt}"
 
@@ -59,9 +58,11 @@ def home():
     return redirect("/login")
 
 
-# LOGIN
+# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    error = None
+
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
@@ -75,14 +76,17 @@ def login():
         if data and pwd == data[0]:
             session["user"] = user
             return redirect("/")
-        return "Invalid login"
+        else:
+            error = "Invalid username or password"
 
-    return render_template("login.html")
+    return render_template("login.html", error=error)
 
 
-# REGISTER
+# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    error = None
+
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
@@ -95,12 +99,12 @@ def register():
             conn.close()
             return redirect("/login")
         except sqlite3.IntegrityError:
-            return "Username already exists"
+            error = "Username already exists"
 
-    return render_template("register.html")
+    return render_template("register.html", error=error)
 
 
-# TOOL (TEXT + IMAGE)
+# ---------------- TOOL ----------------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -109,7 +113,6 @@ def tool():
     user = session["user"]
     user_input = request.form.get("input")
 
-    # -------- IMAGE DETECTION --------
     keywords = ["image", "generate image", "draw", "picture", "photo"]
     if any(k in user_input.lower() for k in keywords):
         image_url = generate_image(user_input)
@@ -121,7 +124,6 @@ def tool():
             count="Unlimited"
         )
 
-    # -------- TEXT AI --------
     result = query_ai(f"Answer clearly: {user_input}")
 
     return render_template(
@@ -132,13 +134,13 @@ def tool():
     )
 
 
-# LOGOUT
+# ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.pop("user", None)
     return redirect("/login")
 
 
-# RUN
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)

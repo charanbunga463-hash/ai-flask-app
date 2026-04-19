@@ -15,6 +15,22 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
+/* FIXED POSITIONS */
+.ai-title {
+    position: fixed;
+    top: 15px;
+    left: 20px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+.logout-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
 /* Center mode */
 .center-mode {
     display: flex;
@@ -80,16 +96,17 @@ body {
     font-size: 14px;
     color: #fff;
 }
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 </style>
 </head>
 
 <body>
+
+<!-- FIXED ELEMENTS -->
+<div class="ai-title">
+    <h5>🤖 AI Assistant</h5>
+</div>
+
+<a href="/logout" class="btn btn-sm btn-outline-danger logout-btn">Logout</a>
 
 {% if not output and not image %}
 <!-- 🔵 CENTER MODE -->
@@ -98,7 +115,6 @@ body {
   <div class="card p-4" style="width:100%; max-width:600px;">
     
     <div class="text-center mb-3">
-      <h4>🤖 AI Assistant</h4>
       <p class="small-text">Welcome {{user}}</p>
     </div>
 
@@ -116,17 +132,6 @@ body {
 {% else %}
 <!-- 🟢 CHAT MODE -->
 <div class="chat-container">
-
-  <!-- Header -->
-  <div class="p-3">
-    <div class="header">
-      <div>
-        <h4 style="color:#ffffff;">🤖 AI Assistant</h4>
-       <!-- <span class="small-text">Welcome {{user}}</span> -->
-      </div>
-      <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-    </div>
-  </div>
 
   <!-- Messages -->
   <div class="messages">

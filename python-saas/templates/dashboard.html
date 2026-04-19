@@ -48,18 +48,17 @@ body {
     flex-direction: column;
 }
 
-/* ✅ Hide scrollbar but keep scroll */
+/* Hide scrollbar but keep scroll */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
-    scroll-behavior: smooth;
 
-    scrollbar-width: none;       /* Firefox */
+    scrollbar-width: none;
 }
 
 .messages::-webkit-scrollbar {
-    display: none;               /* Chrome, Safari */
+    display: none;
 }
 
 .input-area {
@@ -126,11 +125,8 @@ body {
 <a href="/logout" class="btn btn-sm btn-outline-danger logout-btn">Logout</a>
 
 {% if chat|length == 0 %}
-<!-- 🔵 CENTER MODE -->
 <div class="center-mode">
-
   <div class="card p-4" style="width:100%; max-width:600px;">
-    
     <div class="text-center mb-3">
       <p class="small-text">Welcome {{user}}</p>
     </div>
@@ -141,13 +137,10 @@ body {
         <button class="btn btn-ai text-white">Send</button>
       </div>
     </form>
-
   </div>
-
 </div>
 
 {% else %}
-<!-- 🟢 CHAT MODE -->
 <div class="chat-container">
 
   <!-- Messages -->
@@ -188,14 +181,24 @@ body {
 </div>
 {% endif %}
 
-<!-- ✅ AUTO SCROLL (kept) -->
+<!-- ✅ SAVE + RESTORE SCROLL POSITION -->
 <script>
-window.onload = function() {
-    const chatBox = document.getElementById("chatBox");
-    if (chatBox) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-};
+const chatBox = document.getElementById("chatBox");
+
+// Save scroll position before reload
+if (chatBox) {
+    chatBox.addEventListener("scroll", function() {
+        sessionStorage.setItem("scrollPos", chatBox.scrollTop);
+    });
+
+    // Restore scroll position after reload
+    window.onload = function() {
+        const savedPos = sessionStorage.getItem("scrollPos");
+        if (savedPos !== null) {
+            chatBox.scrollTop = savedPos;
+        }
+    };
+}
 </script>
 
 </body>

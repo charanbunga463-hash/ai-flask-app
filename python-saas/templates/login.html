@@ -62,17 +62,20 @@ body {
     <p class="small-text">Access your AI workspace</p>
   </div>
 
-  <!-- 🔴 ERROR MESSAGE -->
+
+  <form method="POST">
+    <input class="form-control input-box mb-3" name="username" placeholder="Username" required>
+    <input class="form-control input-box mb-3" type="password" name="password" placeholder="Password" required>
+
+
+      <!-- 🔴 ERROR MESSAGE -->
   {% if error %}
   <div class="alert alert-danger text-center py-2">
     {{ error }}
   </div>
   {% endif %}
-
-  <form method="POST">
-    <input class="form-control input-box mb-3" name="username" placeholder="Username" required>
-    <input class="form-control input-box mb-3" type="password" name="password" placeholder="Password" required>
     
+  
     <button class="btn btn-ai text-white w-100">Login</button>
   </form>
 

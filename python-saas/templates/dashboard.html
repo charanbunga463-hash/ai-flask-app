@@ -54,6 +54,11 @@ body {
     padding: 20px;
 }
 
+/* 👇 Smooth scroll */
+.messages {
+    scroll-behavior: smooth;
+}
+
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
@@ -83,7 +88,7 @@ body {
     border: 1px solid #ffffff;
 }
 
-/* User message style */
+/* User message */
 .user-box {
     background-color: #1e40af;
     border-radius: 10px;
@@ -143,23 +148,20 @@ body {
 <div class="chat-container">
 
   <!-- Messages -->
-  <div class="messages">
+  <div class="messages" id="chatBox">
 
     {% for msg in chat %}
 
-      <!-- USER -->
       <div class="user-box">
         {{ msg.user }}
       </div>
 
-      <!-- AI TEXT -->
       {% if msg.type == "text" %}
       <div class="response-box">
         {{ msg.bot | safe }}
       </div>
       {% endif %}
 
-      <!-- AI IMAGE -->
       {% if msg.type == "image" %}
       <div class="response-box text-center">
         <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
@@ -182,6 +184,16 @@ body {
 
 </div>
 {% endif %}
+
+<!-- ✅ AUTO SCROLL SCRIPT -->
+<script>
+window.onload = function() {
+    const chatBox = document.getElementById("chatBox");
+    if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+};
+</script>
 
 </body>
 </html>

@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect, session
 import sqlite3
 import os
 from dotenv import load_dotenv
-import markdown
+import markdown   # ✅ NEW
 
 # Load env
 load_dotenv()
@@ -58,15 +58,7 @@ init_db()
 @app.route("/")
 def home():
     if "user" in session:
-        if "chat" not in session:
-            session["chat"] = []   # ✅ INIT CHAT
-
-        return render_template(
-            "dashboard.html",
-            user=session["user"],
-            chat=session["chat"],
-            count="Unlimited"
-        )
+        return render_template("dashboard.html", user=session["user"], count="Unlimited")
     return redirect("/login")
 
 
@@ -87,7 +79,6 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session["chat"] = []  # ✅ RESET CHAT ON LOGIN
             return redirect("/")
         else:
             error = "Invalid username or password"
@@ -123,9 +114,7 @@ def tool():
     if "user" not in session:
         return redirect("/login")
 
-    if "chat" not in session:
-        session["chat"] = []
-
+    user = session["user"]
     user_input = request.form.get("input")
 
     # -------- IMAGE --------
@@ -133,35 +122,31 @@ def tool():
     if any(k in user_input.lower() for k in keywords):
         image_url = generate_image(user_input)
 
-        session["chat"].append({
-            "type": "image",
-            "user": user_input,
-            "image": image_url
-        })
-
-        session.modified = True
-        return redirect("/")  # ✅ IMPORTANT
+        return render_template(
+            "dashboard.html",
+            user=user,
+            image=image_url,
+            count="Unlimited"
+        )
 
     # -------- TEXT --------
     result = query_ai(user_input)
+
+    # ✅ Convert markdown → HTML
     formatted_output = markdown.markdown(result)
 
-    session["chat"].append({
-        "type": "text",
-        "user": user_input,
-        "bot": formatted_output
-    })
-
-    session.modified = True
-
-    return redirect("/")  # ✅ IMPORTANT
+    return render_template(
+        "dashboard.html",
+        user=user,
+        output=formatted_output,
+        count="Unlimited"
+    )
 
 
 # ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.pop("user", None)
-    session.pop("chat", None)  # ✅ CLEAR CHAT
     return redirect("/login")
 
 

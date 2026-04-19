@@ -62,27 +62,26 @@ body {
     <p class="small-text">Access your AI workspace</p>
   </div>
 
-
   <form method="POST">
     <input class="form-control input-box mb-3" name="username" placeholder="Username" required>
-    <input class="form-control input-box mb-3" type="password" name="password" placeholder="Password" required>
 
-<!-- 👁 Show Password -->
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" id="showPassword" onclick="togglePassword()">
-    <label class="form-check-label small-text" for="showPassword">
-      Show Password
-    </label>
-  </div>
+    <!-- ✅ ADD ID HERE -->
+    <input id="password" class="form-control input-box mb-2" type="password" name="password" placeholder="Password" required>
 
-  
-      <!-- 🔴 ERROR MESSAGE -->
-  {% if error %}
-  <div class="alert alert-danger text-center py-2">
-    {{ error }}
-  </div>
-  {% endif %}
-    
+    <!-- 👁 Show Password -->
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" onclick="togglePassword()">
+      <label class="form-check-label small-text">
+        Show Password
+      </label>
+    </div>
+
+    <!-- 🔴 ERROR MESSAGE -->
+    {% if error %}
+    <div class="alert alert-danger text-center py-2 mb-3">
+      {{ error }}
+    </div>
+    {% endif %}
 
     <button class="btn btn-ai text-white w-100">Login</button>
   </form>
@@ -93,6 +92,14 @@ body {
   </div>
 
 </div>
+
+<!-- ✅ ADD SCRIPT -->
+<script>
+function togglePassword() {
+    var pwd = document.getElementById("password");
+    pwd.type = (pwd.type === "password") ? "text" : "password";
+}
+</script>
 
 </body>
 </html>

@@ -15,7 +15,15 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Layout */
+/* Center mode (before asking) */
+.center-mode {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Chat mode (after asking) */
 .chat-container {
     max-width: 800px;
     margin: auto;
@@ -24,35 +32,29 @@ body {
     flex-direction: column;
 }
 
-/* Messages area */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
 }
 
-/* Fixed input at bottom */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* UI styles */
+/* UI */
 .card {
     background-color: #1e293b;
-    border: none;
     border-radius: 15px;
+    border: none;
 }
 
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
     color: white;
-}
-
-.input-box::placeholder {
-    color: #94a3b8;
 }
 
 .btn-ai {
@@ -66,15 +68,11 @@ body {
     padding: 15px;
     margin-top: 10px;
     border: 1px solid #ffffff;
-    color: #ffffff;
-    white-space: pre-wrap;
 }
 
-.image-box img {
-    max-width: 100%;
-    border-radius: 12px;
-    border: 2px solid #334155;
-    margin-top: 10px;
+.small-text {
+    font-size: 14px;
+    color: #fff;
 }
 
 .header {
@@ -82,16 +80,35 @@ body {
     justify-content: space-between;
     align-items: center;
 }
-
-.small-text {
-    color: #ffffff;
-    font-size: 14px;
-}
 </style>
 </head>
 
 <body>
 
+{% if not output and not image %}
+<!-- 🔵 CENTER MODE -->
+<div class="center-mode">
+
+  <div class="card p-4" style="width:100%; max-width:600px;">
+    
+    <div class="text-center mb-3">
+      <h4>🤖 AI Assistant</h4>
+      <p class="small-text">Welcome {{user}}</p>
+    </div>
+
+    <form method="POST" action="/tool">
+      <div class="input-group">
+        <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+        <button class="btn btn-ai text-white">Send</button>
+      </div>
+    </form>
+
+  </div>
+
+</div>
+
+{% else %}
+<!-- 🟢 CHAT MODE -->
 <div class="chat-container">
 
   <!-- Header -->
@@ -103,45 +120,37 @@ body {
       </div>
       <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
     </div>
-    <p class="small-text mt-2">Usage today: {{count}}</p>
   </div>
 
   <!-- Messages -->
   <div class="messages">
 
     {% if output %}
-      <div class="response-box">
-        {{ output | safe }}
-      </div>
+    <div class="response-box">
+      {{ output | safe }}
+    </div>
     {% endif %}
 
     {% if image %}
-      <div class="response-box text-center">
-        <h5>🖼 Generated Image</h5>
-        <div class="image-box">
-          <img src="{{ image }}">
-        </div>
-      </div>
+    <div class="response-box text-center">
+      <img src="{{ image }}" style="max-width:100%; border-radius:10px;">
+    </div>
     {% endif %}
 
   </div>
 
-  <!-- Input (fixed bottom) -->
+  <!-- Input -->
   <div class="input-area">
     <form method="POST" action="/tool">
       <div class="input-group">
-        <input 
-          class="form-control input-box" 
-          name="input" 
-          placeholder="Ask anything..."
-          required
-        >
+        <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
         <button class="btn btn-ai text-white">Send</button>
       </div>
     </form>
   </div>
 
 </div>
+{% endif %}
 
 </body>
 </html>

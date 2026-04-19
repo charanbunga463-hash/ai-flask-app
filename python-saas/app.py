@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, session
 import sqlite3
 import os
 from dotenv import load_dotenv
+import markdown   # ✅ NEW
 
 # Load env
 load_dotenv()
@@ -21,7 +22,10 @@ def query_ai(prompt):
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{
+                "role": "user",
+                "content": f"Answer clearly using markdown (use bullets if needed):\n{prompt}"
+            }],
             max_tokens=300
         )
         return response.choices[0].message.content
@@ -113,6 +117,7 @@ def tool():
     user = session["user"]
     user_input = request.form.get("input")
 
+    # -------- IMAGE --------
     keywords = ["image", "generate image", "draw", "picture", "photo"]
     if any(k in user_input.lower() for k in keywords):
         image_url = generate_image(user_input)
@@ -124,12 +129,16 @@ def tool():
             count="Unlimited"
         )
 
-    result = query_ai(f"Answer clearly: {user_input}")
+    # -------- TEXT --------
+    result = query_ai(user_input)
+
+    # ✅ Convert markdown → HTML
+    formatted_output = markdown.markdown(result)
 
     return render_template(
         "dashboard.html",
         user=user,
-        output=result,
+        output=formatted_output,
         count="Unlimited"
     )
 

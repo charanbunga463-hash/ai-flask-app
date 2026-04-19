@@ -67,6 +67,15 @@ body {
     border: 1px solid #ffffff;
 }
 
+/* Markdown styling */
+.response-box ul {
+    padding-left: 20px;
+}
+
+.response-box li {
+    margin-bottom: 6px;
+}
+
 .small-text {
     font-size: 14px;
     color: #fff;
@@ -124,21 +133,7 @@ body {
 
     {% if output %}
     <div class="response-box">
-
-      {% if '\n' in output and ('-' in output or '*' in output or '•' in output) %}
-        <!-- Bullet format -->
-        <ul style="padding-left:20px; margin:0;">
-          {% for line in output.split('\n') %}
-            {% if line.strip() %}
-              <li>{{ line.lstrip('-*• ').strip() }}</li>
-            {% endif %}
-          {% endfor %}
-        </ul>
-      {% else %}
-        <!-- Paragraph format -->
-        <div>{{ output }}</div>
-      {% endif %}
-
+      {{ output | safe }}
     </div>
     {% endif %}
 

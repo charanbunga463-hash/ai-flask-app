@@ -15,6 +15,7 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
+/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -27,6 +28,7 @@ body {
     border-right: 1px solid #334155;
     overflow-y: auto;
     padding: 15px;
+
     position: fixed;
     left: -300px;
     top: 0;
@@ -34,7 +36,10 @@ body {
     transition: 0.3s;
     z-index: 1000;
 }
-.sidebar.open { left: 0; }
+
+.sidebar.open {
+    left: 0;
+}
 
 .history-box {
     background-color: #1e293b;
@@ -44,7 +49,10 @@ body {
     display: flex;
     align-items: center;
 }
-.history-box.active { background-color: #334155; }
+
+.history-box.active {
+    background-color: #334155;
+}
 
 .history-box a {
     color: white;
@@ -60,27 +68,30 @@ body {
     flex-direction: column;
 }
 
+/* Header */
 .top-bar {
     padding: 10px 15px;
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
+/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
 }
 
-/* INPUT */
+/* Input */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* CHAT */
+/* Chat bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -95,21 +106,9 @@ body {
     border-radius: 10px;
     margin-top: 10px;
     border: 1px solid #334155;
-    white-space: pre-wrap;
 }
 
-/* Cursor animation */
-.cursor {
-    display: inline-block;
-    width: 8px;
-    background: white;
-    margin-left: 2px;
-    animation: blink 1s infinite;
-}
-@keyframes blink {
-    50% { opacity: 0; }
-}
-
+/* Inputs */
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -128,50 +127,76 @@ body {
 
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
+
         <h5>🕘 Chats</h5>
+
         <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
         {% for conv in conversations %}
         <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-            <a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
+
+            <a href="/chat/{{ conv[0] }}">
+                {{ conv[1] }}
+            </a>
 
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
+
                 <ul class="dropdown-menu dropdown-menu-dark">
+
+                    <!-- EDIT -->
                     <li>
                         <button class="dropdown-item"
                                 onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
                             Rename
                         </button>
                     </li>
+
+                    <!-- DELETE -->
                     <li>
                         <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">Delete</button>
+                            <button class="dropdown-item text-danger">
+                                Delete
+                            </button>
                         </form>
                     </li>
+
                 </ul>
             </div>
+
         </div>
         {% endfor %}
+
     </div>
 
-    <!-- CHAT -->
+    <!-- CHAT AREA -->
     <div class="chat-area">
 
+        <!-- TOP BAR -->
         <div class="top-bar">
+
             <h5>🤖 AI Assistant</h5>
+
             <div>
                 <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
                 <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
             </div>
+
         </div>
 
+        <!-- MESSAGES -->
         <div class="messages" id="chatBox">
+
             {% for msg in chat %}
-            <div class="user-box">{{ msg.user }}</div>
+
+            <div class="user-box">
+                {{ msg.user }}
+            </div>
 
             {% if msg.type == "text" %}
-            <div class="response-box">{{ msg.bot | safe }}</div>
+            <div class="response-box">
+                {{ msg.bot | safe }}
+            </div>
             {% endif %}
 
             {% if msg.type == "image" %}
@@ -179,38 +204,51 @@ body {
                 <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
             </div>
             {% endif %}
+
             {% endfor %}
+
         </div>
 
         <!-- INPUT -->
         <div class="input-area">
-            <form id="chatForm">
+            <form method="POST" action="/tool">
                 <div class="input-group">
-                    <input id="userInput" class="form-control input-box" placeholder="Ask anything..." required>
+                    <input class="form-control input-box"
+                           name="input"
+                           placeholder="Ask anything..."
+                           required>
                     <button class="btn btn-ai text-white">Send</button>
                 </div>
             </form>
         </div>
 
     </div>
+
 </div>
 
+<!-- Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- JS -->
 <script>
 
-// Sidebar
+// Toggle sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// Scroll
+// Scroll to bottom
 const chatBox = document.getElementById("chatBox");
-window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
+if (chatBox) {
+    window.onload = () => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+}
 
-// Rename
+//  Rename chat
 function editChat(id, oldTitle) {
     let newTitle = prompt("Edit chat name:", oldTitle);
+
     if (newTitle && newTitle.trim() !== "") {
         let form = document.createElement("form");
         form.method = "POST";
@@ -227,54 +265,6 @@ function editChat(id, oldTitle) {
     }
 }
 
-// 🔥 STREAMING FIXED
-const form = document.getElementById("chatForm");
-const input = document.getElementById("userInput");
-
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const userText = input.value;
-    input.value = "";
-
-    chatBox.innerHTML += `<div class="user-box">${userText}</div>`;
-
-    const botDiv = document.createElement("div");
-    botDiv.className = "response-box";
-    botDiv.innerHTML = `<span class="content"></span><span class="cursor"></span>`;
-    chatBox.appendChild(botDiv);
-
-    const contentSpan = botDiv.querySelector(".content");
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    const response = await fetch("/stream", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({message: userText})
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-
-    let fullText = "";
-
-    while (true) {
-        const {done, value} = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, {stream: true});
-        fullText += chunk;
-
-        // 🔥 FORCE CHARACTER-BY-CHARACTER RENDER
-        contentSpan.textContent = fullText;
-
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // remove cursor after done
-    botDiv.querySelector(".cursor").remove();
-});
 </script>
 
 </body>

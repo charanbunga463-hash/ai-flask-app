@@ -15,61 +15,71 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* FIXED POSITIONS */
-.ai-title {
-    position: fixed;
-    top: 15px;
-    left: 20px;
-    font-weight: bold;
-    z-index: 1000;
-}
-
-.logout-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-}
-
-/* Center mode */
-.center-mode {
+/* Layout */
+.main-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
 }
 
-/* Chat mode */
-.chat-container {
-    max-width: 800px;
-    margin: auto;
-    height: 100vh;
+/* LEFT PANEL */
+.sidebar {
+    width: 30%;
+    border-right: 1px solid #334155;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.history-box {
+    background-color: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+/* RIGHT PANEL */
+.chat-area {
+    width: 70%;
     display: flex;
     flex-direction: column;
 }
 
-/* Hide scrollbar but keep scroll */
+/* Header */
+.top-bar {
+    padding: 10px 15px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
-
-    scrollbar-width: none;
 }
 
-.messages::-webkit-scrollbar {
-    display: none;
-}
-
+/* Input */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-.card {
-    background-color: #1e293b;
-    border-radius: 15px;
+/* Styles */
+.user-box {
+    background-color: #1e40af;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: right;
+    margin-top: 10px;
+}
+
+.response-box {
+    background-color: #020617;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid #ffffff;
 }
 
 .input-box {
@@ -81,121 +91,87 @@ body {
 .btn-ai {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
-
-.response-box {
-    background-color: #020617;
-    border-radius: 10px;
-    padding: 15px;
-    margin-top: 10px;
-    border: 1px solid #ffffff;
-}
-
-/* User message */
-.user-box {
-    background-color: #1e40af;
-    border-radius: 10px;
-    padding: 10px;
-    margin-top: 10px;
-    text-align: right;
-}
-
-/* Markdown styling */
-.response-box ul {
-    padding-left: 20px;
-}
-
-.response-box li {
-    margin-bottom: 6px;
-}
-
-.small-text {
-    font-size: 14px;
-    color: #fff;
-}
 </style>
 </head>
 
 <body>
 
-<!-- FIXED ELEMENTS -->
-<div class="ai-title">
-    <h5>🤖 AI Assistant</h5>
-</div>
+<div class="main-container">
 
-<a href="/logout" class="btn btn-sm btn-outline-danger logout-btn">Logout</a>
+    <!-- LEFT SIDE: CHAT HISTORY -->
+    <div class="sidebar">
+        <h5>🕘 History</h5>
 
-{% if chat|length == 0 %}
-<div class="center-mode">
-  <div class="card p-4" style="width:100%; max-width:600px;">
-    <div class="text-center mb-3">
-      <p class="small-text">Welcome {{user}}</p>
+        {% for msg in chat %}
+        <div class="history-box">
+            <small><b>You:</b> {{ msg.user }}</small>
+        </div>
+        {% endfor %}
     </div>
 
-    <form method="POST" action="/tool">
-      <div class="input-group">
-        <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
-        <button class="btn btn-ai text-white">Send</button>
-      </div>
-    </form>
-  </div>
+    <!-- RIGHT SIDE: CHAT -->
+    <div class="chat-area">
+
+        <!-- Top -->
+        <div class="top-bar">
+            <h5>🤖 AI Assistant</h5>
+            <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages" id="chatBox">
+
+            {% for msg in chat %}
+
+            <div class="user-box">
+                {{ msg.user }}
+            </div>
+
+            {% if msg.type == "text" %}
+            <div class="response-box">
+                {{ msg.bot | safe }}
+            </div>
+            {% endif %}
+
+            {% if msg.type == "image" %}
+            <div class="response-box text-center">
+                <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
+            </div>
+            {% endif %}
+
+            {% endfor %}
+
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <form method="POST" action="/tool">
+                <div class="input-group">
+                    <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+                    <button class="btn btn-ai text-white">Send</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
 </div>
 
-{% else %}
-<div class="chat-container">
-
-  <!-- Messages -->
-  <div class="messages" id="chatBox">
-
-    {% for msg in chat %}
-
-      <div class="user-box">
-        {{ msg.user }}
-      </div>
-
-      {% if msg.type == "text" %}
-      <div class="response-box">
-        {{ msg.bot | safe }}
-      </div>
-      {% endif %}
-
-      {% if msg.type == "image" %}
-      <div class="response-box text-center">
-        <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-      </div>
-      {% endif %}
-
-    {% endfor %}
-
-  </div>
-
-  <!-- Input -->
-  <div class="input-area">
-    <form method="POST" action="/tool">
-      <div class="input-group">
-        <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
-        <button class="btn btn-ai text-white">Send</button>
-      </div>
-    </form>
-  </div>
-
-</div>
-{% endif %}
-
-<!-- ✅ SAVE + RESTORE SCROLL POSITION -->
+<!-- Scroll Save -->
 <script>
 const chatBox = document.getElementById("chatBox");
 
-// Save scroll position before reload
 if (chatBox) {
     chatBox.addEventListener("scroll", function() {
         sessionStorage.setItem("scrollPos", chatBox.scrollTop);
     });
 
-    // Restore scroll position after reload
     window.onload = function() {
-        const savedPos = sessionStorage.getItem("scrollPos");
-        if (savedPos !== null) {
-            chatBox.scrollTop = savedPos;
+        const saved = sessionStorage.getItem("scrollPos");
+        if (saved !== null) {
+            chatBox.scrollTop = saved;
+        } else {
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
     };
 }

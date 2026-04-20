@@ -41,14 +41,12 @@ def init_db():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # Users
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )''')
 
-    # Chats
     c.execute('''CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
@@ -79,19 +77,25 @@ def home():
     chat = []
     for row in data:
         if row[2] == "text":
-            chat.append({
-                "type": "text",
-                "user": row[0],
-                "bot": row[1]
-            })
+            chat.append({"type": "text", "user": row[0], "bot": row[1]})
         else:
-            chat.append({
-                "type": "image",
-                "user": row[0],
-                "image": row[1]
-            })
+            chat.append({"type": "image", "user": row[0], "image": row[1]})
 
     return render_template("dashboard.html", user=session["user"], chat=chat)
+
+# ---------------- DELETE HISTORY ----------------
+@app.route("/delete_history", methods=["POST"])
+def delete_history():
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("DELETE FROM chats WHERE username=?", (session["user"],))
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])

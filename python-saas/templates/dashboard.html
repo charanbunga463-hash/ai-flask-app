@@ -15,7 +15,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -28,7 +27,6 @@ body {
     border-right: 1px solid #334155;
     overflow-y: auto;
     padding: 15px;
-
     position: fixed;
     left: -300px;
     top: 0;
@@ -62,7 +60,6 @@ body {
     flex-direction: column;
 }
 
-/* Header */
 .top-bar {
     padding: 10px 15px;
     border-bottom: 1px solid #334155;
@@ -71,21 +68,20 @@ body {
     align-items: center;
 }
 
-/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
 }
 
-/* Input */
+/* INPUT */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* Chat bubbles */
+/* CHAT */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -103,7 +99,7 @@ body {
     white-space: pre-wrap;
 }
 
-/* Inputs */
+/* INPUT */
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -122,6 +118,7 @@ body {
 
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
+
         <h5>🕘 Chats</h5>
         <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
@@ -131,8 +128,8 @@ body {
 
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-                <ul class="dropdown-menu dropdown-menu-dark">
 
+                <ul class="dropdown-menu dropdown-menu-dark">
                     <li>
                         <button class="dropdown-item"
                                 onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
@@ -142,22 +139,19 @@ body {
 
                     <li>
                         <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">
-                                Delete
-                            </button>
+                            <button class="dropdown-item text-danger">Delete</button>
                         </form>
                     </li>
-
                 </ul>
             </div>
         </div>
         {% endfor %}
+
     </div>
 
-    <!-- CHAT AREA -->
+    <!-- CHAT -->
     <div class="chat-area">
 
-        <!-- TOP BAR -->
         <div class="top-bar">
             <h5>🤖 AI Assistant</h5>
             <div>
@@ -171,12 +165,10 @@ body {
 
             {% for msg in chat %}
 
-            <div class="user-box">
-                {{ msg.user }}
-            </div>
+            <div class="user-box">{{ msg.user }}</div>
 
             {% if msg.type == "text" %}
-            <div class="response-box typing" data-text="{{ msg.bot | e }}"></div>
+            <div class="response-box">{{ msg.bot | safe }}</div>
             {% endif %}
 
             {% if msg.type == "image" %}
@@ -189,12 +181,12 @@ body {
 
         </div>
 
-        <!-- INPUT -->
+        <!-- INPUT (🔥 STREAMING) -->
         <div class="input-area">
-            <form method="POST" action="/tool">
+            <form id="chatForm">
                 <div class="input-group">
-                    <input class="form-control input-box"
-                           name="input"
+                    <input id="userInput"
+                           class="form-control input-box"
                            placeholder="Ask anything..."
                            required>
                     <button class="btn btn-ai text-white">Send</button>
@@ -209,7 +201,7 @@ body {
 
 <script>
 
-// Sidebar toggle
+// Sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
@@ -218,37 +210,9 @@ function toggleSidebar() {
 const chatBox = document.getElementById("chatBox");
 window.onload = () => {
     chatBox.scrollTop = chatBox.scrollHeight;
-    startTyping();
 };
 
-// Typing effect
-function typeText(element, text, speed = 15) {
-    let i = 0;
-    function typing() {
-        if (i < text.length) {
-            element.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(typing, speed);
-        }
-    }
-    typing();
-}
-
-function startTyping() {
-    const elements = document.querySelectorAll(".typing");
-
-    elements.forEach((el, index) => {
-        const text = el.getAttribute("data-text");
-        el.innerHTML = "";
-
-        // delay per message
-        setTimeout(() => {
-            typeText(el, text);
-        }, index * 300);
-    });
-}
-
-// Rename chat
+// Rename
 function editChat(id, oldTitle) {
     let newTitle = prompt("Edit chat name:", oldTitle);
 
@@ -268,6 +232,44 @@ function editChat(id, oldTitle) {
     }
 }
 
+// 🔥 STREAMING CHAT
+const form = document.getElementById("chatForm");
+const input = document.getElementById("userInput");
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const userText = input.value;
+    input.value = "";
+
+    // Show user message
+    chatBox.innerHTML += `<div class="user-box">${userText}</div>`;
+
+    // Bot container
+    const botDiv = document.createElement("div");
+    botDiv.className = "response-box";
+    chatBox.appendChild(botDiv);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const response = await fetch("/stream", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: userText})
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        botDiv.innerHTML += chunk;  // 🔥 real-time output
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+});
 </script>
 
 </body>

@@ -93,45 +93,36 @@ def home():
         active_chat=None
     )
 
-# ---------------- CREATE NEW CHAT ----------------
-@app.route("/new_chat")
-def new_chat():
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-
-    c.execute(
-        "INSERT INTO conversations (username, title) VALUES (?, ?)",
-        (session["user"], "New Chat")
-    )
-
-    conv_id = c.lastrowid
-    conn.commit()
-    conn.close()
-
-    session["conv_id"] = conv_id
-
-    return redirect(f"/chat/{conv_id}")
-
 # ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
 def open_chat(conv_id):
     if "user" not in session:
         return redirect("/login")
 
-    session["conv_id"] = conv_id
-
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
+    # ✅ CHECK CHAT EXISTS
+    c.execute(
+        "SELECT id FROM conversations WHERE id=? AND username=?",
+        (conv_id, session["user"])
+    )
+    exists = c.fetchone()
+
+    if not exists:
+        conn.close()
+        return redirect("/")   # 🔥 prevent error
+
+    session["conv_id"] = conv_id
+
+    # Conversations list
     c.execute(
         "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
         (session["user"],)
     )
     conversations = c.fetchall()
 
+    # Messages
     c.execute(
         "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
         (conv_id,)
@@ -158,7 +149,57 @@ def open_chat(conv_id):
         active_chat=conv_id
     )
 
-# ---------------- AUTO CHAT + MESSAGE ----------------
+# ---------------- DELETE CHAT ----------------
+@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
+def delete_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    # Delete
+    c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
+    c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+
+    conn.commit()
+
+    # ✅ Get another chat
+    c.execute(
+        "SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
+        (session["user"],)
+    )
+    next_chat = c.fetchone()
+
+    conn.close()
+
+    if next_chat:
+        session["conv_id"] = next_chat[0]
+        return redirect(f"/chat/{next_chat[0]}")
+    else:
+        session.pop("conv_id", None)
+        return redirect("/")
+
+# ---------------- DELETE MESSAGE ----------------
+@app.route("/delete_message/<int:msg_id>", methods=["POST"])
+def delete_message(msg_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute(
+        "DELETE FROM chats WHERE id=? AND username=?",
+        (msg_id, session["user"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/chat/{session.get('conv_id')}")
+
+# ---------------- TOOL (AUTO CHAT) ----------------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -171,7 +212,7 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # 🔥 AUTO CREATE CHAT IF NONE
+    # ✅ AUTO CREATE CHAT
     if not conv_id:
         title = user_input[:30] if user_input else "New Chat"
 
@@ -183,7 +224,7 @@ def tool():
         conv_id = c.lastrowid
         session["conv_id"] = conv_id
 
-    # ---------------- IMAGE ----------------
+    # IMAGE
     if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
         image_url = generate_image(user_input)
 
@@ -196,7 +237,7 @@ def tool():
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # ---------------- TEXT ----------------
+    # TEXT
     result = query_ai(user_input)
     formatted = markdown.markdown(result)
 

@@ -65,7 +65,6 @@ body {
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
-    align-items: center;
 }
 
 .messages {
@@ -99,7 +98,18 @@ body {
     white-space: pre-wrap;
 }
 
-/* INPUT */
+/* Cursor animation */
+.cursor {
+    display: inline-block;
+    width: 8px;
+    background: white;
+    margin-left: 2px;
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -118,7 +128,6 @@ body {
 
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
-
         <h5>🕘 Chats</h5>
         <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
@@ -128,7 +137,6 @@ body {
 
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-
                 <ul class="dropdown-menu dropdown-menu-dark">
                     <li>
                         <button class="dropdown-item"
@@ -136,7 +144,6 @@ body {
                             Rename
                         </button>
                     </li>
-
                     <li>
                         <form method="POST" action="/delete_chat/{{ conv[0] }}">
                             <button class="dropdown-item text-danger">Delete</button>
@@ -146,7 +153,6 @@ body {
             </div>
         </div>
         {% endfor %}
-
     </div>
 
     <!-- CHAT -->
@@ -160,11 +166,8 @@ body {
             </div>
         </div>
 
-        <!-- MESSAGES -->
         <div class="messages" id="chatBox">
-
             {% for msg in chat %}
-
             <div class="user-box">{{ msg.user }}</div>
 
             {% if msg.type == "text" %}
@@ -176,19 +179,14 @@ body {
                 <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
             </div>
             {% endif %}
-
             {% endfor %}
-
         </div>
 
-        <!-- INPUT (🔥 STREAMING) -->
+        <!-- INPUT -->
         <div class="input-area">
             <form id="chatForm">
                 <div class="input-group">
-                    <input id="userInput"
-                           class="form-control input-box"
-                           placeholder="Ask anything..."
-                           required>
+                    <input id="userInput" class="form-control input-box" placeholder="Ask anything..." required>
                     <button class="btn btn-ai text-white">Send</button>
                 </div>
             </form>
@@ -206,16 +204,13 @@ function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// Scroll bottom
+// Scroll
 const chatBox = document.getElementById("chatBox");
-window.onload = () => {
-    chatBox.scrollTop = chatBox.scrollHeight;
-};
+window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
 // Rename
 function editChat(id, oldTitle) {
     let newTitle = prompt("Edit chat name:", oldTitle);
-
     if (newTitle && newTitle.trim() !== "") {
         let form = document.createElement("form");
         form.method = "POST";
@@ -232,7 +227,7 @@ function editChat(id, oldTitle) {
     }
 }
 
-// 🔥 STREAMING CHAT
+// 🔥 STREAMING FIXED
 const form = document.getElementById("chatForm");
 const input = document.getElementById("userInput");
 
@@ -242,13 +237,14 @@ form.addEventListener("submit", async (e) => {
     const userText = input.value;
     input.value = "";
 
-    // Show user message
     chatBox.innerHTML += `<div class="user-box">${userText}</div>`;
 
-    // Bot container
     const botDiv = document.createElement("div");
     botDiv.className = "response-box";
+    botDiv.innerHTML = `<span class="content"></span><span class="cursor"></span>`;
     chatBox.appendChild(botDiv);
+
+    const contentSpan = botDiv.querySelector(".content");
 
     chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -259,16 +255,25 @@ form.addEventListener("submit", async (e) => {
     });
 
     const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    const decoder = new TextDecoder("utf-8");
+
+    let fullText = "";
 
     while (true) {
         const {done, value} = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        botDiv.innerHTML += chunk;  // 🔥 real-time output
+        const chunk = decoder.decode(value, {stream: true});
+        fullText += chunk;
+
+        // 🔥 FORCE CHARACTER-BY-CHARACTER RENDER
+        contentSpan.textContent = fullText;
+
         chatBox.scrollTop = chatBox.scrollHeight;
     }
+
+    // remove cursor after done
+    botDiv.querySelector(".cursor").remove();
 });
 </script>
 

@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, redirect, session, Response, stream_with_context
 import sqlite3
 import os
+import time
 from dotenv import load_dotenv
 import markdown
 from openai import OpenAI
@@ -56,7 +57,7 @@ def init_db():
 
 init_db()
 
-# ---------------- STREAM (🔥 REAL AI STREAMING) ----------------
+# ---------------- STREAM (🔥 FIXED) ----------------
 @app.route("/stream", methods=["POST"])
 def stream():
     if "user" not in session:
@@ -95,27 +96,36 @@ def stream():
         for chunk in stream:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
+
                 full_response += text
-                yield text   # 🔥 send live to frontend
+
+                yield text  # 🔥 send immediately
+                time.sleep(0.01)  # 🔥 force flush (important)
 
         # save after complete
         formatted = markdown.markdown(full_response)
 
-        c.execute("""INSERT INTO chats
-            (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (?, ?, ?, ?, ?)""",
-            (conv_id, session["user"], user_msg, formatted, "text"))
+        c.execute("""
+            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (conv_id, session["user"], user_msg, formatted, "text"))
 
         conn.commit()
         conn.close()
 
-    return Response(stream_with_context(generate()), content_type="text/plain")
-
+    return Response(
+        stream_with_context(generate()),
+        content_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",   # 🔥 disables nginx buffering
+            "Transfer-Encoding": "chunked"
+        }
+    )
 
 # ---------------- IMAGE ----------------
 def generate_image(prompt):
     return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
-
 
 # ---------------- HOME ----------------
 @app.route("/")
@@ -139,7 +149,6 @@ def home():
                            chat=[],
                            conversations=conversations,
                            active_chat=None)
-
 
 # ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
@@ -184,7 +193,6 @@ def open_chat(conv_id):
                            conversations=conversations,
                            active_chat=conv_id)
 
-
 # ---------------- DELETE ----------------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])
 def delete_chat(conv_id):
@@ -210,7 +218,6 @@ def delete_chat(conv_id):
         session.pop("conv_id", None)
         return redirect("/")
 
-
 # ---------------- EDIT ----------------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
@@ -229,7 +236,6 @@ def edit_chat(conv_id):
     conn.close()
 
     return redirect(f"/chat/{conv_id}")
-
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
@@ -254,7 +260,6 @@ def login():
             error = "Invalid credentials"
 
     return render_template("login.html", error=error)
-
 
 # ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
@@ -281,14 +286,12 @@ def register():
 
     return render_template("register.html", error=error)
 
-
 # ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
 
-
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

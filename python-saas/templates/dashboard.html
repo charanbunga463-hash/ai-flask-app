@@ -21,12 +21,24 @@ body {
     height: 100vh;
 }
 
-/* LEFT PANEL */
+/* SIDEBAR (HIDDEN DEFAULT) */
 .sidebar {
-    width: 30%;
+    width: 300px;
+    background-color: #0f172a;
     border-right: 1px solid #334155;
     overflow-y: auto;
     padding: 15px;
+
+    position: fixed;
+    left: -300px;
+    top: 0;
+    height: 100%;
+    transition: 0.3s;
+    z-index: 1000;
+}
+
+.sidebar.open {
+    left: 0;
 }
 
 .history-box {
@@ -37,16 +49,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer;
 }
 
-.history-box.active {
-    background-color: #334155;
-}
-
-/* RIGHT PANEL */
+/* CHAT AREA */
 .chat-area {
-    width: 70%;
+    width: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -74,7 +81,7 @@ body {
     background-color: #1e293b;
 }
 
-/* Chat styles */
+/* Chat */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -107,25 +114,25 @@ body {
 
 <div class="main-container">
 
-    <!-- LEFT SIDE (CONVERSATIONS) -->
-    <div class="sidebar">
+    <!-- SIDEBAR -->
+    <div id="sidebar" class="sidebar">
+
+        <h5>🕘 Chats</h5>
 
         <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
         {% for conv in conversations %}
-        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
+        <div class="history-box">
 
-            <!-- CLICK CHAT -->
-            <a href="/chat/{{ conv[0] }}" style="text-decoration:none; color:white; flex:1;">
+            <a href="/chat/{{ conv[0] }}" style="color:white; text-decoration:none; flex:1;">
                 {{ conv[1] }}
             </a>
 
-            <!-- ⋯ MENU -->
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
                 <ul class="dropdown-menu dropdown-menu-dark">
                     <li>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}" onsubmit="return confirmDeleteChat();">
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}">
                             <button class="dropdown-item text-danger">Delete</button>
                         </form>
                     </li>
@@ -137,16 +144,24 @@ body {
 
     </div>
 
-    <!-- RIGHT SIDE -->
+    <!-- CHAT AREA -->
     <div class="chat-area">
 
-        <!-- Top -->
+        <!-- TOP BAR -->
         <div class="top-bar">
+
             <h5>🤖 AI Assistant</h5>
-            <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+
+            <div>
+                <!-- HISTORY BUTTON -->
+                <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
+
+                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+            </div>
+
         </div>
 
-        <!-- Messages -->
+        <!-- MESSAGES -->
         <div class="messages" id="chatBox">
 
             {% for msg in chat %}
@@ -171,7 +186,7 @@ body {
 
         </div>
 
-        <!-- Input -->
+        <!-- INPUT -->
         <div class="input-area">
             <form method="POST" action="/tool">
                 <div class="input-group">
@@ -185,21 +200,19 @@ body {
 
 </div>
 
-<!-- Bootstrap JS -->
+<!-- Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Scroll -->
+<!-- JS -->
 <script>
-const chatBox = document.getElementById("chatBox");
-
-if (chatBox) {
-    window.onload = function() {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("open");
 }
 
-function confirmDeleteChat() {
-    return confirm("Delete this chat?");
+// scroll
+const chatBox = document.getElementById("chatBox");
+if (chatBox) {
+    window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 }
 </script>
 

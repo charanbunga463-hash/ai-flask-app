@@ -15,6 +15,7 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
+/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -68,13 +69,14 @@ body {
     padding: 20px;
 }
 
+/* INPUT */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* Bubbles */
+/* CHAT BUBBLES */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -89,10 +91,10 @@ body {
     border-radius: 10px;
     margin-top: 10px;
     border: 1px solid #334155;
-    white-space: pre-wrap; /* 🔥 FIX: keep text formatting */
+    white-space: pre-wrap;
 }
 
-/* typing cursor */
+/* TYPING CURSOR */
 .typing::after {
     content: "|";
     animation: blink 1s infinite;
@@ -102,6 +104,7 @@ body {
     50% {opacity:1;}
 }
 
+/* INPUT */
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -127,7 +130,7 @@ body {
 
 {% for conv in conversations %}
 <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-<a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
+    <a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
 </div>
 {% endfor %}
 
@@ -137,28 +140,28 @@ body {
 <div class="chat-area">
 
 <div class="top-bar">
-<h5>🤖 AI Assistant</h5>
-<div>
-<button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
-<a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-</div>
+    <h5>🤖 AI Assistant</h5>
+    <div>
+        <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
+        <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+    </div>
 </div>
 
 <!-- MESSAGES -->
 <div class="messages" id="chatBox">
 
 {% for msg in chat %}
-<div class="user-box">{{ msg.user }}</div>
+    <div class="user-box">{{ msg.user }}</div>
 
-{% if msg.type == "text" %}
-<div class="response-box">{{ msg.bot }}</div>
-{% endif %}
+    {% if msg.type == "text" %}
+    <div class="response-box">{{ msg.bot }}</div>
+    {% endif %}
 
-{% if msg.type == "image" %}
-<div class="response-box text-center">
-<img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-</div>
-{% endif %}
+    {% if msg.type == "image" %}
+    <div class="response-box text-center">
+        <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
+    </div>
+    {% endif %}
 {% endfor %}
 
 </div>
@@ -170,6 +173,7 @@ body {
 <input class="form-control input-box"
        id="userInput"
        placeholder="Ask anything..."
+       autocomplete="off"
        required>
 <button class="btn btn-ai text-white">Send</button>
 </div>
@@ -183,7 +187,7 @@ body {
 
 <script>
 
-// sidebar toggle
+// toggle sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
@@ -192,7 +196,7 @@ function toggleSidebar() {
 const chatBox = document.getElementById("chatBox");
 window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
-// ✅ STREAM FIX (MAIN)
+// STREAM FUNCTION (FINAL)
 function sendMessage(e) {
     e.preventDefault();
 
@@ -203,10 +207,13 @@ function sendMessage(e) {
     input.value = "";
 
     // user message
-    chatBox.innerHTML += `<div class="user-box">${text}</div>`;
+    const userDiv = document.createElement("div");
+    userDiv.className = "user-box";
+    userDiv.textContent = text;
+    chatBox.appendChild(userDiv);
 
-    // bot message container
-    let botDiv = document.createElement("div");
+    // bot message
+    const botDiv = document.createElement("div");
     botDiv.className = "response-box typing";
     chatBox.appendChild(botDiv);
 
@@ -221,7 +228,7 @@ function sendMessage(e) {
             return;
         }
 
-        // 🔥 IMPORTANT FIX (NO PARAGRAPH BREAKS)
+        // ✅ smooth streaming (no paragraph breaks)
         botDiv.textContent += event.data;
 
         chatBox.scrollTop = chatBox.scrollHeight;

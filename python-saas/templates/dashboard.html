@@ -40,15 +40,12 @@ body {
     padding: 10px;
     border-radius: 10px;
     margin-bottom: 10px;
-    display: flex;
-    align-items: center;
 }
 .history-box.active { background-color: #334155; }
 
 .history-box a {
     color: white;
     text-decoration: none;
-    flex: 1;
 }
 
 /* CHAT */
@@ -92,6 +89,7 @@ body {
     border-radius: 10px;
     margin-top: 10px;
     border: 1px solid #334155;
+    white-space: pre-wrap; /* 🔥 FIX: keep text formatting */
 }
 
 /* typing cursor */
@@ -153,7 +151,7 @@ body {
 <div class="user-box">{{ msg.user }}</div>
 
 {% if msg.type == "text" %}
-<div class="response-box">{{ msg.bot | safe }}</div>
+<div class="response-box">{{ msg.bot }}</div>
 {% endif %}
 
 {% if msg.type == "image" %}
@@ -185,16 +183,16 @@ body {
 
 <script>
 
-// sidebar
+// sidebar toggle
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// scroll
+// auto scroll
 const chatBox = document.getElementById("chatBox");
 window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
-// ✅ STREAM (FIXED)
+// ✅ STREAM FIX (MAIN)
 function sendMessage(e) {
     e.preventDefault();
 
@@ -207,14 +205,13 @@ function sendMessage(e) {
     // user message
     chatBox.innerHTML += `<div class="user-box">${text}</div>`;
 
-    // bot message
+    // bot message container
     let botDiv = document.createElement("div");
     botDiv.className = "response-box typing";
     chatBox.appendChild(botDiv);
 
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ✅ IMPORTANT: GET request only
     const es = new EventSource("/stream?input=" + encodeURIComponent(text));
 
     es.onmessage = function(event) {
@@ -224,13 +221,15 @@ function sendMessage(e) {
             return;
         }
 
-        botDiv.innerHTML += event.data;
+        // 🔥 IMPORTANT FIX (NO PARAGRAPH BREAKS)
+        botDiv.textContent += event.data;
+
         chatBox.scrollTop = chatBox.scrollHeight;
     };
 
     es.onerror = function() {
         botDiv.classList.remove("typing");
-        botDiv.innerHTML += "<br><span style='color:red'>Error loading response</span>";
+        botDiv.textContent += "\nError loading response";
         es.close();
     };
 }

@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, redirect, session, Response, 
 import sqlite3
 import os
 from dotenv import load_dotenv
-import markdown
 from openai import OpenAI
 
 # ---------------- ENV ----------------
@@ -29,20 +28,25 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""CREATE TABLE IF NOT EXISTS users(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
-    )""")
+    )
+    """)
 
-    c.execute("""CREATE TABLE IF NOT EXISTS conversations(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS conversations(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
         title TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )""")
+    )
+    """)
 
-    c.execute("""CREATE TABLE IF NOT EXISTS chats(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS chats(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER,
         username TEXT,
@@ -50,7 +54,8 @@ def init_db():
         bot_msg TEXT,
         type TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )""")
+    )
+    """)
 
     conn.commit()
     conn.close()
@@ -67,12 +72,15 @@ def home():
 
     conn = get_db()
     c = conn.cursor()
+
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
+
     conn.close()
 
-    return render_template("dashboard.html",
+    return render_template(
+        "dashboard.html",
         user=session["user"],
         chat=[],
         conversations=conversations,
@@ -122,7 +130,8 @@ def open_chat(conv_id):
             "image": r[2] if r[3] == "image" else None
         })
 
-    return render_template("dashboard.html",
+    return render_template(
+        "dashboard.html",
         user=session["user"],
         chat=chat,
         conversations=conversations,
@@ -158,8 +167,10 @@ def edit_chat(conv_id):
 
     conn = get_db()
     c = conn.cursor()
+
     c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
               (title, conv_id, session["user"]))
+
     conn.commit()
     conn.close()
 
@@ -171,7 +182,7 @@ def stream():
     if "user" not in session:
         return "Unauthorized", 401
 
-    user_input = request.args.get("input")  # ✅ GET FIX
+    user_input = request.args.get("input")
 
     def generate():
         conn = get_db()
@@ -179,12 +190,13 @@ def stream():
 
         conv_id = session.get("conv_id")
 
-        # create chat if first message
+        # create new conversation if needed
         if not conv_id:
             title = user_input[:30] if user_input else "New Chat"
 
             c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
                       (session["user"], title))
+
             conv_id = c.lastrowid
             session["conv_id"] = conv_id
             conn.commit()
@@ -210,13 +222,11 @@ def stream():
         except Exception as e:
             yield f"data: Error: {str(e)}\n\n"
 
-        # save response
-        formatted = markdown.markdown(full_text)
-
-        c.execute("""INSERT INTO chats 
-            (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (?, ?, ?, ?, ?)""",
-            (conv_id, session["user"], user_input, formatted, "text"))
+        # ✅ SAVE RAW TEXT (NO markdown here)
+        c.execute("""
+            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (conv_id, session["user"], user_input, full_text, "text"))
 
         conn.commit()
         conn.close()
@@ -243,6 +253,7 @@ def login():
 
         conn = get_db()
         c = conn.cursor()
+
         c.execute("SELECT password FROM users WHERE username=?", (user,))
         data = c.fetchone()
         conn.close()
@@ -268,10 +279,15 @@ def register():
         try:
             conn = get_db()
             c = conn.cursor()
-            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+
+            c.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+                      (user, pwd))
+
             conn.commit()
             conn.close()
+
             return redirect("/login")
+
         except sqlite3.IntegrityError:
             error = "Username exists"
 

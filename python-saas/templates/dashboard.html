@@ -21,7 +21,7 @@ body {
     height: 100vh;
 }
 
-/* SIDEBAR (HIDDEN DEFAULT) */
+/* SIDEBAR */
 .sidebar {
     width: 300px;
     background-color: #0f172a;
@@ -47,8 +47,18 @@ body {
     border-radius: 10px;
     margin-bottom: 10px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+}
+
+.history-box.active {
+    background-color: #334155;
+}
+
+.history-box a {
+    color: white;
+    text-decoration: none;
+    flex: 1;
+    font-size: 14px;
 }
 
 /* CHAT AREA */
@@ -81,7 +91,7 @@ body {
     background-color: #1e293b;
 }
 
-/* Chat */
+/* Chat bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -95,9 +105,10 @@ body {
     padding: 15px;
     border-radius: 10px;
     margin-top: 10px;
-    border: 1px solid #ffffff;
+    border: 1px solid #334155;
 }
 
+/* Inputs */
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -122,20 +133,34 @@ body {
         <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
         {% for conv in conversations %}
-        <div class="history-box">
+        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
 
-            <a href="/chat/{{ conv[0] }}" style="color:white; text-decoration:none; flex:1;">
+            <a href="/chat/{{ conv[0] }}">
                 {{ conv[1] }}
             </a>
 
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
+
                 <ul class="dropdown-menu dropdown-menu-dark">
+
+                    <!-- EDIT -->
+                    <li>
+                        <button class="dropdown-item"
+                                onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
+                            Rename
+                        </button>
+                    </li>
+
+                    <!-- DELETE -->
                     <li>
                         <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">Delete</button>
+                            <button class="dropdown-item text-danger">
+                                Delete
+                            </button>
                         </form>
                     </li>
+
                 </ul>
             </div>
 
@@ -153,9 +178,7 @@ body {
             <h5>🤖 AI Assistant</h5>
 
             <div>
-                <!-- HISTORY BUTTON -->
                 <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
-
                 <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
             </div>
 
@@ -190,7 +213,10 @@ body {
         <div class="input-area">
             <form method="POST" action="/tool">
                 <div class="input-group">
-                    <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+                    <input class="form-control input-box"
+                           name="input"
+                           placeholder="Ask anything..."
+                           required>
                     <button class="btn btn-ai text-white">Send</button>
                 </div>
             </form>
@@ -205,15 +231,40 @@ body {
 
 <!-- JS -->
 <script>
+
+// Toggle sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// scroll
+// Scroll to bottom
 const chatBox = document.getElementById("chatBox");
 if (chatBox) {
-    window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
+    window.onload = () => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
 }
+
+// Rename chat
+function editChat(id, oldTitle) {
+    let newTitle = prompt("Edit chat name:", oldTitle);
+
+    if (newTitle && newTitle.trim() !== "") {
+        let form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/edit_chat/" + id;
+
+        let input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "title";
+        input.value = newTitle;
+
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 </script>
 
 </body>

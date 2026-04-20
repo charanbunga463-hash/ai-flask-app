@@ -73,7 +73,7 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
-    # 🔥 RESET CHAT → fresh page like ChatGPT
+    # ✅ Always fresh screen (no active chat)
     session.pop("conv_id", None)
 
     conn = sqlite3.connect("users.db")
@@ -99,10 +99,9 @@ def new_chat():
     if "user" not in session:
         return redirect("/login")
 
-    # 🔥 JUST RESET → do NOT create immediately
+    # ✅ just reset (no DB insert yet)
     session.pop("conv_id", None)
-
-    return redirect("/")  # fresh empty screen
+    return redirect("/")
 
 # ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
@@ -113,7 +112,7 @@ def open_chat(conv_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # 🔥 CHECK EXISTS
+    # ✅ Prevent invalid chat access
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
@@ -122,15 +121,15 @@ def open_chat(conv_id):
 
     session["conv_id"] = conv_id
 
-    # conversations
-    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
-              (session["user"],))
-    conversations = c.fetchall()
-
-    # messages
+    # Load chats
     c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
               (conv_id,))
     rows = c.fetchall()
+
+    # Load conversations
+    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+              (session["user"],))
+    conversations = c.fetchall()
 
     conn.close()
 
@@ -163,10 +162,9 @@ def delete_chat(conv_id):
 
     c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
     c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
-
     conn.commit()
 
-    # 🔥 GET ANOTHER CHAT
+    # ✅ Load another chat if exists
     c.execute("SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
               (session["user"],))
     next_chat = c.fetchone()
@@ -178,6 +176,25 @@ def delete_chat(conv_id):
     else:
         session.pop("conv_id", None)
         return redirect("/")
+
+# ---------------- EDIT CHAT TITLE ----------------
+@app.route("/edit_chat/<int:conv_id>", methods=["POST"])
+def edit_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    new_title = request.form.get("title")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
+              (new_title, conv_id, session["user"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/chat/{conv_id}")
 
 # ---------------- TOOL ----------------
 @app.route("/tool", methods=["POST"])
@@ -192,7 +209,7 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # 🔥 CREATE CHAT ONLY WHEN USER TYPES
+    # ✅ Create chat only when user sends first message
     if not conv_id:
         title = user_input[:30]
 
@@ -206,7 +223,7 @@ def tool():
     if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
         img = generate_image(user_input)
 
-        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO chats VALUES (NULL, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
                   (conv_id, session["user"], user_input, img, "image"))
 
         conn.commit()
@@ -217,7 +234,7 @@ def tool():
     result = query_ai(user_input)
     formatted = markdown.markdown(result)
 
-    c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO chats VALUES (NULL, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
               (conv_id, session["user"], user_input, formatted, "text"))
 
     conn.commit()

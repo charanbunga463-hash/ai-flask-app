@@ -36,7 +36,10 @@ def generate_image(prompt):
 
 # ---------------- DB ----------------
 def init_db():
-    conn = sqlite3.connect("users.db")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(BASE_DIR, "users.db")
+
+    conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
     c.execute("""CREATE TABLE IF NOT EXISTS users(

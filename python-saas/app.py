@@ -11,6 +11,10 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
+# 🔥 FIX: stable DB path (no data loss)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "users.db")
+
 # ---------------- AI ----------------
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
@@ -35,11 +39,11 @@ def generate_image(prompt):
     return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
 
 # ---------------- DB ----------------
-def init_db():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(BASE_DIR, "users.db")
+def get_db():
+    return sqlite3.connect(DB_PATH)
 
-    conn = sqlite3.connect(db_path)
+def init_db():
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("""CREATE TABLE IF NOT EXISTS users(
@@ -76,10 +80,10 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
-    # ✅ Always fresh screen (no active chat)
+    # fresh screen
     session.pop("conv_id", None)
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
@@ -102,7 +106,6 @@ def new_chat():
     if "user" not in session:
         return redirect("/login")
 
-    # ✅ just reset (no DB insert yet)
     session.pop("conv_id", None)
     return redirect("/")
 
@@ -112,10 +115,10 @@ def open_chat(conv_id):
     if "user" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     c = conn.cursor()
 
-    # ✅ Prevent invalid chat access
+    # validate chat
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
@@ -124,12 +127,12 @@ def open_chat(conv_id):
 
     session["conv_id"] = conv_id
 
-    # Load chats
+    # messages
     c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
               (conv_id,))
     rows = c.fetchall()
 
-    # Load conversations
+    # conversations
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
@@ -160,14 +163,14 @@ def delete_chat(conv_id):
     if "user" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
     c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
     conn.commit()
 
-    # ✅ Load another chat if exists
+    # go to another chat
     c.execute("SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
               (session["user"],))
     next_chat = c.fetchone()
@@ -186,13 +189,13 @@ def edit_chat(conv_id):
     if "user" not in session:
         return redirect("/login")
 
-    new_title = request.form.get("title")
+    title = request.form.get("title")
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
-              (new_title, conv_id, session["user"]))
+              (title, conv_id, session["user"]))
 
     conn.commit()
     conn.close()
@@ -207,12 +210,12 @@ def tool():
 
     user_input = request.form.get("input")
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db()
     c = conn.cursor()
 
     conv_id = session.get("conv_id")
 
-    # ✅ Create chat only when user sends first message
+    # create chat only when user sends first message
     if not conv_id:
         title = user_input[:30]
 
@@ -226,7 +229,7 @@ def tool():
     if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
         img = generate_image(user_input)
 
-        c.execute("INSERT INTO chats VALUES (NULL, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
                   (conv_id, session["user"], user_input, img, "image"))
 
         conn.commit()
@@ -237,7 +240,7 @@ def tool():
     result = query_ai(user_input)
     formatted = markdown.markdown(result)
 
-    c.execute("INSERT INTO chats VALUES (NULL, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+    c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
               (conv_id, session["user"], user_input, formatted, "text"))
 
     conn.commit()
@@ -254,10 +257,12 @@ def login():
         user = request.form.get("username")
         pwd = request.form.get("password")
 
-        conn = sqlite3.connect("users.db")
+        conn = get_db()
         c = conn.cursor()
+
         c.execute("SELECT password FROM users WHERE username=?", (user,))
         data = c.fetchone()
+
         conn.close()
 
         if data and pwd == data[0]:
@@ -279,12 +284,16 @@ def register():
         pwd = request.form.get("password")
 
         try:
-            conn = sqlite3.connect("users.db")
+            conn = get_db()
             c = conn.cursor()
+
             c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+
             conn.commit()
             conn.close()
+
             return redirect("/login")
+
         except sqlite3.IntegrityError:
             error = "Username exists"
 

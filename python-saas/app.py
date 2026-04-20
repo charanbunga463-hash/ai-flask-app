@@ -1,17 +1,15 @@
 from flask import Flask, request, render_template, redirect, session, Response, stream_with_context
 import sqlite3
 import os
-import re  # ✅ ADDED
+import re   # ✅ ADDED
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# ---------------- ENV ----------------
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# ---------------- DB ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
 
@@ -24,30 +22,25 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ---------------- INIT DB ----------------
+# ---------------- DB INIT ----------------
 def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS users(
+    c.execute("""CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
-    )
-    """)
+    )""")
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS conversations(
+    c.execute("""CREATE TABLE IF NOT EXISTS conversations(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
         title TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+    )""")
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS chats(
+    c.execute("""CREATE TABLE IF NOT EXISTS chats(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER,
         username TEXT,
@@ -55,8 +48,7 @@ def init_db():
         bot_msg TEXT,
         type TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+    )""")
 
     conn.commit()
     conn.close()
@@ -73,11 +65,9 @@ def home():
 
     conn = get_db()
     c = conn.cursor()
-
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
-
     conn.close()
 
     return render_template("dashboard.html",
@@ -118,36 +108,39 @@ def stream():
                     {
                         "role": "system",
                         "content": (
-                            "Format responses properly.\n"
-                            "If user asks for points:\n"
-                            "- Use numbered list\n"
-                            "- Each point MUST be on a new line\n"
+                            "STRICT FORMAT:\n"
+                            "- If user asks for points → return numbered list (1., 2., 3.)\n"
+                            "- Each point MUST be on new line\n"
+                            "- Do NOT combine into paragraph\n"
+                            "- Keep headings bold\n"
                         )
                     },
                     {"role": "user", "content": user_input}
                 ],
-                temperature=0.7,
+                temperature=0.5,
                 stream=True
             )
 
             for chunk in response:
                 token = chunk.choices[0].delta.content or ""
-
                 if token:
-                    # 🔥 REGEX FIX: force new line before numbers
-                    token = re.sub(r'(\d+\.)\s*', r'\n\1 ', token)
-
                     full_text += token
                     yield f"data: {token}\n\n"
 
         except Exception as e:
             yield f"data: Error: {str(e)}\n\n"
 
-        # save raw text
+        # 🔥 FORCE FORMAT USING REGEX
+        formatted = re.sub(r'(\d+\.)', r'\n\1', full_text)  # new line before numbers
+
+        # remove duplicate new lines
+        formatted = re.sub(r'\n+', '\n', formatted).strip()
+
+        # save formatted
         c.execute("""
             INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
             VALUES (?, ?, ?, ?, ?)
-        """, (conv_id, session["user"], user_input, full_text, "text"))
+        """, (conv_id, session["user"], user_input, formatted, "text"))
 
         conn.commit()
         conn.close()
@@ -180,7 +173,6 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session.pop("conv_id", None)
             return redirect("/")
         else:
             error = "Invalid credentials"

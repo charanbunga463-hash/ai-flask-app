@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# ---------------- DB PATH ----------------
+# ---------------- DB ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
 
@@ -67,11 +67,9 @@ def home():
 
     conn = get_db()
     c = conn.cursor()
-
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
-
     conn.close()
 
     return render_template("dashboard.html",
@@ -99,6 +97,7 @@ def open_chat(conv_id):
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
+        conn.close()
         return redirect("/")
 
     session["conv_id"] = conv_id
@@ -152,29 +151,27 @@ def delete_chat(conv_id):
         session.pop("conv_id", None)
         return redirect("/")
 
-# ---------------- EDIT TITLE ----------------
+# ---------------- EDIT ----------------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
     title = request.form.get("title")
 
     conn = get_db()
     c = conn.cursor()
-
     c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
               (title, conv_id, session["user"]))
-
     conn.commit()
     conn.close()
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- STREAM (FIXED) ----------------
-@app.route("/stream", methods=["POST"])
+# ---------------- STREAM (FINAL FIX) ----------------
+@app.route("/stream")
 def stream():
     if "user" not in session:
         return "Unauthorized", 401
 
-    user_input = request.form.get("input")
+    user_input = request.args.get("input")  # ✅ GET FIX
 
     def generate():
         conn = get_db()
@@ -182,13 +179,12 @@ def stream():
 
         conv_id = session.get("conv_id")
 
-        # create chat if needed
+        # create chat if first message
         if not conv_id:
-            title = user_input[:30]
+            title = user_input[:30] if user_input else "New Chat"
 
             c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
                       (session["user"], title))
-
             conv_id = c.lastrowid
             session["conv_id"] = conv_id
             conn.commit()
@@ -207,13 +203,14 @@ def stream():
 
             for chunk in response:
                 token = chunk.choices[0].delta.content or ""
-                full_text += token
-                yield f"data: {token}\n\n"
+                if token:
+                    full_text += token
+                    yield f"data: {token}\n\n"
 
         except Exception as e:
             yield f"data: Error: {str(e)}\n\n"
 
-        # save AFTER stream
+        # save response
         formatted = markdown.markdown(full_text)
 
         c.execute("""INSERT INTO chats 
@@ -231,7 +228,7 @@ def stream():
         mimetype="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no"   # 🔥 important for Render
+            "X-Accel-Buffering": "no"
         }
     )
 
@@ -246,7 +243,6 @@ def login():
 
         conn = get_db()
         c = conn.cursor()
-
         c.execute("SELECT password FROM users WHERE username=?", (user,))
         data = c.fetchone()
         conn.close()
@@ -276,7 +272,6 @@ def register():
             conn.commit()
             conn.close()
             return redirect("/login")
-
         except sqlite3.IntegrityError:
             error = "Username exists"
 

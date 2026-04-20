@@ -40,12 +40,14 @@ def init_db():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
+    # USERS
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )''')
 
+    # CONVERSATIONS
     c.execute('''CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
@@ -53,6 +55,7 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
 
+    # CHATS
     c.execute('''CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER,
@@ -74,6 +77,9 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
+    # 🔥 Always reset conversation on refresh
+    session.pop("conv_id", None)
+
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
@@ -84,49 +90,14 @@ def home():
     )
     conversations = c.fetchall()
 
-    # ✅ Create new chat ONLY first time (not on refresh)
-    conv_id = session.get("conv_id")
-    if not conv_id:
-        c.execute(
-            "INSERT INTO conversations (username, title) VALUES (?, ?)",
-            (session["user"], "New Chat")
-        )
-        conv_id = c.lastrowid
-        session["conv_id"] = conv_id
-        conn.commit()
-
-    # Load messages
-    c.execute(
-        "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
-        (conv_id,)
-    )
-    data = c.fetchall()
-
     conn.close()
-
-    messages = []
-    for row in data:
-        if row[3] == "text":
-            messages.append({
-                "id": row[0],
-                "type": "text",
-                "user": row[1],
-                "bot": row[2]
-            })
-        else:
-            messages.append({
-                "id": row[0],
-                "type": "image",
-                "user": row[1],
-                "image": row[2]
-            })
 
     return render_template(
         "dashboard.html",
         user=session["user"],
-        chat=messages,
+        chat=[],
         conversations=conversations,
-        active_chat=conv_id
+        active_chat=None
     )
 
 # ---------------- NEW CHAT ----------------
@@ -143,13 +114,12 @@ def new_chat():
         (session["user"], "New Chat")
     )
 
-    conv_id = c.lastrowid
-    session["conv_id"] = conv_id
+    session["conv_id"] = c.lastrowid
 
     conn.commit()
     conn.close()
 
-    return redirect(f"/chat/{conv_id}")
+    return redirect(f"/chat/{session['conv_id']}")
 
 # ---------------- SWITCH CHAT ----------------
 @app.route("/chat/<int:conv_id>")
@@ -162,12 +132,14 @@ def switch_chat(conv_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
+    # Conversations
     c.execute(
         "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
         (session["user"],)
     )
     conversations = c.fetchall()
 
+    # Messages
     c.execute(
         "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
         (conv_id,)
@@ -256,7 +228,6 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session.pop("conv_id", None)  # new session → new chat
             return redirect("/")
         else:
             error = "Invalid credentials"
@@ -300,7 +271,7 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # Safety (should not happen normally)
+    # If no chat → force create
     if not conv_id:
         c.execute(
             "INSERT INTO conversations (username, title) VALUES (?, ?)",

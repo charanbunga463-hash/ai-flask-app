@@ -72,9 +72,11 @@ def home():
 
     conn = get_db()
     c = conn.cursor()
+
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
+
     conn.close()
 
     return render_template("dashboard.html",
@@ -98,6 +100,7 @@ def stream():
 
         conv_id = session.get("conv_id")
 
+        # create new conversation if needed
         if not conv_id:
             title = user_input[:30] if user_input else "New Chat"
             c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
@@ -114,10 +117,13 @@ def stream():
                 messages=[
                     {
                         "role": "system",
-                        "content": "Reply in natural flowing paragraphs. Do not use bullet points or lists."
+                        "content": "Format responses exactly as the user asks. "
+                                   "If user asks for points, return numbered list. "
+                                   "Otherwise respond naturally."
                     },
                     {"role": "user", "content": user_input}
                 ],
+                temperature=0.7,
                 stream=True
             )
 
@@ -167,6 +173,7 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
+            session.pop("conv_id", None)
             return redirect("/")
         else:
             error = "Invalid credentials"

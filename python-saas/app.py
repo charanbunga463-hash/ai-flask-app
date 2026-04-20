@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, redirect, session, Response, stream_with_context
 import sqlite3
 import os
+import re  # ✅ ADDED
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -100,7 +101,6 @@ def stream():
 
         conv_id = session.get("conv_id")
 
-        # create new conversation if needed
         if not conv_id:
             title = user_input[:30] if user_input else "New Chat"
             c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
@@ -117,9 +117,12 @@ def stream():
                 messages=[
                     {
                         "role": "system",
-                        "content": "Format responses exactly as the user asks. "
-                                   "If user asks for points, return numbered list. "
-                                   "Otherwise respond naturally."
+                        "content": (
+                            "Format responses properly.\n"
+                            "If user asks for points:\n"
+                            "- Use numbered list\n"
+                            "- Each point MUST be on a new line\n"
+                        )
                     },
                     {"role": "user", "content": user_input}
                 ],
@@ -129,7 +132,11 @@ def stream():
 
             for chunk in response:
                 token = chunk.choices[0].delta.content or ""
+
                 if token:
+                    # 🔥 REGEX FIX: force new line before numbers
+                    token = re.sub(r'(\d+\.)\s*', r'\n\1 ', token)
+
                     full_text += token
                     yield f"data: {token}\n\n"
 

@@ -22,7 +22,7 @@ def query_ai(prompt):
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Answer clearly and concisely."},
+                {"role": "system", "content": "Answer clearly and briefly."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=300
@@ -93,27 +93,6 @@ def home():
         active_chat=None
     )
 
-# ---------------- NEW CHAT ----------------
-@app.route("/new_chat")
-def new_chat():
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-
-    c.execute(
-        "INSERT INTO conversations (username, title) VALUES (?, ?)",
-        (session["user"], "New Chat")
-    )
-
-    session["conv_id"] = c.lastrowid
-
-    conn.commit()
-    conn.close()
-
-    return redirect(f"/chat/{session['conv_id']}")
-
 # ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
 def open_chat(conv_id):
@@ -125,16 +104,12 @@ def open_chat(conv_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    c.execute(
-        "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
-        (session["user"],)
-    )
+    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+              (session["user"],))
     conversations = c.fetchall()
 
-    c.execute(
-        "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
-        (conv_id,)
-    )
+    c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
+              (conv_id,))
     data = c.fetchall()
 
     conn.close()
@@ -164,46 +139,7 @@ def open_chat(conv_id):
         active_chat=conv_id
     )
 
-# ---------------- DELETE CHAT ----------------
-@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
-def delete_chat(conv_id):
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-
-    c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
-    c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
-
-    conn.commit()
-    conn.close()
-
-    if session.get("conv_id") == conv_id:
-        session.pop("conv_id", None)
-
-    return redirect("/")
-
-# ---------------- DELETE MESSAGE ----------------
-@app.route("/delete_message/<int:msg_id>", methods=["POST"])
-def delete_message(msg_id):
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-
-    c.execute(
-        "DELETE FROM chats WHERE id=? AND username=?",
-        (msg_id, session["user"])
-    )
-
-    conn.commit()
-    conn.close()
-
-    return redirect(f"/chat/{session.get('conv_id')}")
-
-# ---------------- TOOL ----------------
+# ---------------- TOOL (AUTO CHAT CREATION) ----------------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -216,9 +152,9 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # 🔥 AUTO CREATE CHAT IF NOT EXISTS
+    # 🔥 IF NO CHAT EXISTS → CREATE NEW CHAT AUTOMATICALLY
     if not conv_id:
-        title = user_input[:25] if user_input else "New Chat"
+        title = user_input[:30]  # auto title from question
 
         c.execute(
             "INSERT INTO conversations (username, title) VALUES (?, ?)",
@@ -255,7 +191,7 @@ def tool():
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- AUTH ----------------
+# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -272,13 +208,14 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session.pop("conv_id", None)  # NEW SESSION CHAT LIKE CHATGPT
+            session.pop("conv_id", None)  # reset like ChatGPT new session
             return redirect("/")
         else:
             error = "Invalid credentials"
 
     return render_template("login.html", error=error)
 
+# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None

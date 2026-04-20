@@ -34,10 +34,14 @@ body {
     padding: 10px;
     border-radius: 10px;
     margin-bottom: 10px;
-
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+}
+
+.history-box.active {
+    background-color: #334155;
 }
 
 /* RIGHT PANEL */
@@ -70,7 +74,7 @@ body {
     background-color: #1e293b;
 }
 
-/* Styles */
+/* Chat styles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -103,22 +107,25 @@ body {
 
 <div class="main-container">
 
-    <!-- LEFT SIDE -->
+    <!-- LEFT SIDE (CONVERSATIONS) -->
     <div class="sidebar">
-        <h5>🕘 History</h5>
 
-        {% for msg in chat %}
-        <div class="history-box">
+        <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
-            <!-- TEXT -->
-            <small><b>You:</b> {{ msg.user }}</small>
+        {% for conv in conversations %}
+        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
 
-            <!-- HORIZONTAL ⋯ -->
+            <!-- CLICK CHAT -->
+            <a href="/chat/{{ conv[0] }}" style="text-decoration:none; color:white; flex:1;">
+                {{ conv[1] }}
+            </a>
+
+            <!-- ⋯ MENU -->
             <div class="dropdown">
                 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
                 <ul class="dropdown-menu dropdown-menu-dark">
                     <li>
-                        <form method="POST" action="/delete_message/{{ msg.id }}" onsubmit="return confirmOneDelete();">
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" onsubmit="return confirmDeleteChat();">
                             <button class="dropdown-item text-danger">Delete</button>
                         </form>
                     </li>
@@ -127,6 +134,7 @@ body {
 
         </div>
         {% endfor %}
+
     </div>
 
     <!-- RIGHT SIDE -->
@@ -180,28 +188,18 @@ body {
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Scroll Save -->
+<!-- Scroll -->
 <script>
 const chatBox = document.getElementById("chatBox");
 
 if (chatBox) {
-    chatBox.addEventListener("scroll", function() {
-        sessionStorage.setItem("scrollPos", chatBox.scrollTop);
-    });
-
     window.onload = function() {
-        const saved = sessionStorage.getItem("scrollPos");
-        if (saved !== null) {
-            chatBox.scrollTop = saved;
-        } else {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+        chatBox.scrollTop = chatBox.scrollHeight;
     };
 }
 
-/* Confirm delete */
-function confirmOneDelete() {
-    return confirm("Delete this message?");
+function confirmDeleteChat() {
+    return confirm("Delete this chat?");
 }
 </script>
 

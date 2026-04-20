@@ -35,19 +35,30 @@ def query_ai(prompt):
 def generate_image(prompt):
     return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
 
-# ---------------- DB ----------------
+# ---------------- DATABASE ----------------
 def init_db():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
+    # USERS
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )''')
 
+    # CONVERSATIONS
+    c.execute('''CREATE TABLE IF NOT EXISTS conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        title TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+
+    # CHATS
     c.execute('''CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER,
         username TEXT,
         user_msg TEXT,
         bot_msg TEXT,
@@ -68,21 +79,85 @@ def home():
 
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
-    c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE username=? ORDER BY id ASC",
+
+    # Load conversations
+    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
-    data = c.fetchall()
+    conversations = c.fetchall()
+
+    # Current conversation
+    conv_id = session.get("conv_id")
+
+    if not conv_id and conversations:
+        conv_id = conversations[0][0]
+        session["conv_id"] = conv_id
+
+    messages = []
+    if conv_id:
+        c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
+                  (conv_id,))
+        data = c.fetchall()
+
+        for row in data:
+            if row[3] == "text":
+                messages.append({"id": row[0], "type": "text", "user": row[1], "bot": row[2]})
+            else:
+                messages.append({"id": row[0], "type": "image", "user": row[1], "image": row[2]})
+
     conn.close()
 
-    chat = []
-    for row in data:
-        if row[3] == "text":
-            chat.append({"id": row[0], "type": "text", "user": row[1], "bot": row[2]})
-        else:
-            chat.append({"id": row[0], "type": "image", "user": row[1], "image": row[2]})
+    return render_template(
+        "dashboard.html",
+        user=session["user"],
+        chat=messages,
+        conversations=conversations,
+        active_chat=conv_id
+    )
 
-    return render_template("dashboard.html", chat=chat, user=session["user"])
+# ---------------- NEW CHAT ----------------
+@app.route("/new_chat")
+def new_chat():
+    if "user" not in session:
+        return redirect("/login")
 
-# ---------------- DELETE SINGLE MESSAGE ----------------
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
+              (session["user"], "New Chat"))
+
+    session["conv_id"] = c.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+# ---------------- SWITCH CHAT ----------------
+@app.route("/chat/<int:conv_id>")
+def switch_chat(conv_id):
+    session["conv_id"] = conv_id
+    return redirect("/")
+
+# ---------------- DELETE CHAT ----------------
+@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
+def delete_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
+    c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+
+    conn.commit()
+    conn.close()
+
+    session.pop("conv_id", None)
+    return redirect("/")
+
+# ---------------- DELETE MESSAGE ----------------
 @app.route("/delete_message/<int:msg_id>", methods=["POST"])
 def delete_message(msg_id):
     if "user" not in session:
@@ -91,7 +166,6 @@ def delete_message(msg_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # ✅ Delete only user's message (safe)
     c.execute("DELETE FROM chats WHERE id=? AND username=?", (msg_id, session["user"]))
 
     conn.commit()
@@ -154,12 +228,21 @@ def tool():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
+    conv_id = session.get("conv_id")
+
+    # Create chat if none exists
+    if not conv_id:
+        c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
+                  (session["user"], user_input[:20]))
+        conv_id = c.lastrowid
+        session["conv_id"] = conv_id
+
     # IMAGE
     if any(k in user_input.lower() for k in ["image", "draw", "picture", "photo"]):
         image_url = generate_image(user_input)
 
-        c.execute("INSERT INTO chats (username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?)",
-                  (session["user"], user_input, image_url, "image"))
+        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+                  (conv_id, session["user"], user_input, image_url, "image"))
 
         conn.commit()
         conn.close()
@@ -169,8 +252,8 @@ def tool():
     result = query_ai(user_input)
     formatted = markdown.markdown(result)
 
-    c.execute("INSERT INTO chats (username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?)",
-              (session["user"], user_input, formatted, "text"))
+    c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+              (conv_id, session["user"], user_input, formatted, "text"))
 
     conn.commit()
     conn.close()

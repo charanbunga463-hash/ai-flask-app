@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, Response, stream_with_context
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -11,9 +11,12 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# 🔥 FIX: stable DB path (no data loss)
+# ---------------- DB PATH (FIXED) ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
+
+def get_db():
+    return sqlite3.connect(DB_PATH)
 
 # ---------------- AI ----------------
 client = OpenAI(
@@ -21,27 +24,7 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-def query_ai(prompt):
-    try:
-        res = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": "Answer briefly."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=300
-        )
-        return res.choices[0].message.content
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-def generate_image(prompt):
-    return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
-
-# ---------------- DB ----------------
-def get_db():
-    return sqlite3.connect(DB_PATH)
-
+# ---------------- DB INIT ----------------
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -80,7 +63,6 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
-    # fresh screen
     session.pop("conv_id", None)
 
     conn = get_db()
@@ -103,9 +85,6 @@ def home():
 # ---------------- NEW CHAT ----------------
 @app.route("/new_chat")
 def new_chat():
-    if "user" not in session:
-        return redirect("/login")
-
     session.pop("conv_id", None)
     return redirect("/")
 
@@ -118,7 +97,6 @@ def open_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
-    # validate chat
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
@@ -127,12 +105,10 @@ def open_chat(conv_id):
 
     session["conv_id"] = conv_id
 
-    # messages
     c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
               (conv_id,))
     rows = c.fetchall()
 
-    # conversations
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
@@ -160,9 +136,6 @@ def open_chat(conv_id):
 # ---------------- DELETE CHAT ----------------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])
 def delete_chat(conv_id):
-    if "user" not in session:
-        return redirect("/login")
-
     conn = get_db()
     c = conn.cursor()
 
@@ -170,7 +143,6 @@ def delete_chat(conv_id):
     c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
     conn.commit()
 
-    # go to another chat
     c.execute("SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
               (session["user"],))
     next_chat = c.fetchone()
@@ -183,12 +155,9 @@ def delete_chat(conv_id):
         session.pop("conv_id", None)
         return redirect("/")
 
-# ---------------- EDIT CHAT TITLE ----------------
+# ---------------- EDIT CHAT ----------------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
-    if "user" not in session:
-        return redirect("/login")
-
     title = request.form.get("title")
 
     conn = get_db()
@@ -202,9 +171,9 @@ def edit_chat(conv_id):
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- TOOL ----------------
-@app.route("/tool", methods=["POST"])
-def tool():
+# ---------------- STREAM (🔥 MAIN FEATURE) ----------------
+@app.route("/stream", methods=["POST"])
+def stream():
     if "user" not in session:
         return redirect("/login")
 
@@ -215,7 +184,7 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # create chat only when user sends first message
+    # create chat if needed
     if not conv_id:
         title = user_input[:30]
 
@@ -224,29 +193,43 @@ def tool():
 
         conv_id = c.lastrowid
         session["conv_id"] = conv_id
+        conn.commit()
 
-    # IMAGE
-    if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
-        img = generate_image(user_input)
+    def generate():
+        full_text = ""
 
-        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
-                  (conv_id, session["user"], user_input, img, "image"))
+        try:
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "Answer briefly."},
+                    {"role": "user", "content": user_input}
+                ],
+                stream=True
+            )
+
+            for chunk in response:
+                content = chunk.choices[0].delta.content or ""
+                full_text += content
+                yield f"data: {content}\n\n"
+
+        except Exception as e:
+            yield f"data: Error: {str(e)}\n\n"
+
+        # save to DB after complete
+        formatted = markdown.markdown(full_text)
+
+        c.execute(
+            "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+            (conv_id, session["user"], user_input, formatted, "text")
+        )
 
         conn.commit()
         conn.close()
-        return redirect(f"/chat/{conv_id}")
 
-    # TEXT
-    result = query_ai(user_input)
-    formatted = markdown.markdown(result)
+        yield "data: [DONE]\n\n"
 
-    c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
-              (conv_id, session["user"], user_input, formatted, "text"))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(f"/chat/{conv_id}")
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
@@ -305,6 +288,6 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ----------------- RUN -----------------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)

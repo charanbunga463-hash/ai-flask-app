@@ -8,6 +8,9 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+<!-- SSE polyfill -->
+<script src="https://cdn.jsdelivr.net/npm/event-source-polyfill@1.0.31/src/eventsource.min.js"></script>
+
 <style>
 body {
     background-color: #0f172a;
@@ -15,7 +18,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -26,9 +28,7 @@ body {
     width: 300px;
     background-color: #0f172a;
     border-right: 1px solid #334155;
-    overflow-y: auto;
     padding: 15px;
-
     position: fixed;
     left: -300px;
     top: 0;
@@ -36,10 +36,7 @@ body {
     transition: 0.3s;
     z-index: 1000;
 }
-
-.sidebar.open {
-    left: 0;
-}
+.sidebar.open { left: 0; }
 
 .history-box {
     background-color: #1e293b;
@@ -49,10 +46,7 @@ body {
     display: flex;
     align-items: center;
 }
-
-.history-box.active {
-    background-color: #334155;
-}
+.history-box.active { background-color: #334155; }
 
 .history-box a {
     color: white;
@@ -61,37 +55,33 @@ body {
     font-size: 14px;
 }
 
-/* CHAT AREA */
+/* CHAT */
 .chat-area {
     width: 100%;
     display: flex;
     flex-direction: column;
 }
 
-/* Header */
 .top-bar {
     padding: 10px 15px;
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
-    align-items: center;
 }
 
-/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
 }
 
-/* Input */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* Chat bubbles */
+/* Bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -108,7 +98,16 @@ body {
     border: 1px solid #334155;
 }
 
-/* Inputs */
+/* typing cursor */
+.typing::after {
+    content: "|";
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    0%,100% {opacity:0;}
+    50% {opacity:1;}
+}
+
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -125,144 +124,149 @@ body {
 
 <div class="main-container">
 
-    <!-- SIDEBAR -->
-    <div id="sidebar" class="sidebar">
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
 
-        <h5>🕘 Chats</h5>
+<h5>🕘 Chats</h5>
 
-        <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
+<a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
-        {% for conv in conversations %}
-        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
+{% for conv in conversations %}
+<div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
 
-            <a href="/chat/{{ conv[0] }}">
-                {{ conv[1] }}
-            </a>
+<a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
 
-            <div class="dropdown">
-                <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
+<div class="dropdown">
+<button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
 
-                <ul class="dropdown-menu dropdown-menu-dark">
+<ul class="dropdown-menu dropdown-menu-dark">
+<li>
+<button class="dropdown-item"
+onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">Rename</button>
+</li>
 
-                    <!-- EDIT -->
-                    <li>
-                        <button class="dropdown-item"
-                                onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
-                            Rename
-                        </button>
-                    </li>
+<li>
+<form method="POST" action="/delete_chat/{{ conv[0] }}">
+<button class="dropdown-item text-danger">Delete</button>
+</form>
+</li>
+</ul>
+</div>
 
-                    <!-- DELETE -->
-                    <li>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">
-                                Delete
-                            </button>
-                        </form>
-                    </li>
-
-                </ul>
-            </div>
-
-        </div>
-        {% endfor %}
-
-    </div>
-
-    <!-- CHAT AREA -->
-    <div class="chat-area">
-
-        <!-- TOP BAR -->
-        <div class="top-bar">
-
-            <h5>🤖 AI Assistant</h5>
-
-            <div>
-                <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
-                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-            </div>
-
-        </div>
-
-        <!-- MESSAGES -->
-        <div class="messages" id="chatBox">
-
-            {% for msg in chat %}
-
-            <div class="user-box">
-                {{ msg.user }}
-            </div>
-
-            {% if msg.type == "text" %}
-            <div class="response-box">
-                {{ msg.bot | safe }}
-            </div>
-            {% endif %}
-
-            {% if msg.type == "image" %}
-            <div class="response-box text-center">
-                <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-            </div>
-            {% endif %}
-
-            {% endfor %}
-
-        </div>
-
-        <!-- INPUT -->
-        <div class="input-area">
-            <form method="POST" action="/tool">
-                <div class="input-group">
-                    <input class="form-control input-box"
-                           name="input"
-                           placeholder="Ask anything..."
-                           required>
-                    <button class="btn btn-ai text-white">Send</button>
-                </div>
-            </form>
-        </div>
-
-    </div>
+</div>
+{% endfor %}
 
 </div>
 
-<!-- Bootstrap -->
+<!-- CHAT -->
+<div class="chat-area">
+
+<div class="top-bar">
+<h5>🤖 AI Assistant</h5>
+<div>
+<button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
+<a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+</div>
+</div>
+
+<!-- MESSAGES -->
+<div class="messages" id="chatBox">
+
+{% for msg in chat %}
+<div class="user-box">{{ msg.user }}</div>
+
+{% if msg.type == "text" %}
+<div class="response-box">{{ msg.bot | safe }}</div>
+{% endif %}
+
+{% if msg.type == "image" %}
+<div class="response-box text-center">
+<img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
+</div>
+{% endif %}
+{% endfor %}
+
+</div>
+
+<!-- INPUT -->
+<div class="input-area">
+<form onsubmit="sendMessage(event)">
+<div class="input-group">
+<input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+<button class="btn btn-ai text-white">Send</button>
+</div>
+</form>
+</div>
+
+</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- JS -->
 <script>
 
-// Toggle sidebar
+// sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// Scroll to bottom
+// scroll
 const chatBox = document.getElementById("chatBox");
-if (chatBox) {
-    window.onload = () => {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
-}
+window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
-//  Rename chat
+// rename
 function editChat(id, oldTitle) {
     let newTitle = prompt("Edit chat name:", oldTitle);
+    if (!newTitle) return;
 
-    if (newTitle && newTitle.trim() !== "") {
-        let form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/edit_chat/" + id;
+    let form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/edit_chat/" + id;
 
-        let input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "title";
-        input.value = newTitle;
+    let input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "title";
+    input.value = newTitle;
 
-        form.appendChild(input);
-        document.body.appendChild(form);
-        form.submit();
-    }
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// 🔥 STREAMING CHAT
+function sendMessage(e) {
+    e.preventDefault();
+
+    const input = document.querySelector("input[name='input']");
+    const text = input.value;
+    input.value = "";
+
+    // user message
+    chatBox.innerHTML += `<div class="user-box">${text}</div>`;
+
+    // bot message
+    let botDiv = document.createElement("div");
+    botDiv.className = "response-box typing";
+    chatBox.appendChild(botDiv);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const es = new EventSourcePolyfill("/stream", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "input=" + encodeURIComponent(text)
+    });
+
+    es.onmessage = function(event) {
+        if (event.data === "[DONE]") {
+            botDiv.classList.remove("typing");
+            es.close();
+            return;
+        }
+
+        botDiv.innerHTML += event.data;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
 }
 
 </script>

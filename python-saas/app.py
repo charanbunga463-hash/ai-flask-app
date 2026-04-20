@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import markdown
 from openai import OpenAI
 
-# ---------------- LOAD ENV ----------------
+# ---------------- ENV ----------------
 load_dotenv()
 
 app = Flask(__name__)
@@ -93,6 +93,28 @@ def home():
         active_chat=None
     )
 
+# ---------------- CREATE NEW CHAT ----------------
+@app.route("/new_chat")
+def new_chat():
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute(
+        "INSERT INTO conversations (username, title) VALUES (?, ?)",
+        (session["user"], "New Chat")
+    )
+
+    conv_id = c.lastrowid
+    conn.commit()
+    conn.close()
+
+    session["conv_id"] = conv_id
+
+    return redirect(f"/chat/{conv_id}")
+
 # ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
 def open_chat(conv_id):
@@ -104,32 +126,29 @@ def open_chat(conv_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
-              (session["user"],))
+    c.execute(
+        "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+        (session["user"],)
+    )
     conversations = c.fetchall()
 
-    c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
-              (conv_id,))
+    c.execute(
+        "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
+        (conv_id,)
+    )
     data = c.fetchall()
 
     conn.close()
 
     messages = []
     for row in data:
-        if row[3] == "text":
-            messages.append({
-                "id": row[0],
-                "type": "text",
-                "user": row[1],
-                "bot": row[2]
-            })
-        else:
-            messages.append({
-                "id": row[0],
-                "type": "image",
-                "user": row[1],
-                "image": row[2]
-            })
+        messages.append({
+            "id": row[0],
+            "type": row[3],
+            "user": row[1],
+            "bot": row[2] if row[3] == "text" else None,
+            "image": row[2] if row[3] == "image" else None
+        })
 
     return render_template(
         "dashboard.html",
@@ -139,7 +158,7 @@ def open_chat(conv_id):
         active_chat=conv_id
     )
 
-# ---------------- TOOL (AUTO CHAT CREATION) ----------------
+# ---------------- AUTO CHAT + MESSAGE ----------------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -152,9 +171,9 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # 🔥 IF NO CHAT EXISTS → CREATE NEW CHAT AUTOMATICALLY
+    # 🔥 AUTO CREATE CHAT IF NONE
     if not conv_id:
-        title = user_input[:30]  # auto title from question
+        title = user_input[:30] if user_input else "New Chat"
 
         c.execute(
             "INSERT INTO conversations (username, title) VALUES (?, ?)",
@@ -208,7 +227,7 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
-            session.pop("conv_id", None)  # reset like ChatGPT new session
+            session.pop("conv_id", None)
             return redirect("/")
         else:
             error = "Invalid credentials"

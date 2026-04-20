@@ -49,6 +49,7 @@ body {
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 /* Messages */
@@ -98,7 +99,7 @@ body {
 
 <div class="main-container">
 
-    <!-- LEFT SIDE: CHAT HISTORY -->
+    <!-- LEFT SIDE -->
     <div class="sidebar">
         <h5>🕘 History</h5>
 
@@ -109,13 +110,21 @@ body {
         {% endfor %}
     </div>
 
-    <!-- RIGHT SIDE: CHAT -->
+    <!-- RIGHT SIDE -->
     <div class="chat-area">
 
         <!-- Top -->
         <div class="top-bar">
             <h5>🤖 AI Assistant</h5>
-            <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+
+            <div>
+                <!-- ✅ DELETE BUTTON -->
+                <form method="POST" action="/delete_history" style="display:inline;" onsubmit="return confirmDelete();">
+                    <button class="btn btn-sm btn-warning">Clear History</button>
+                </form>
+
+                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+            </div>
         </div>
 
         <!-- Messages -->
@@ -174,6 +183,11 @@ if (chatBox) {
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     };
+}
+
+/* ✅ CONFIRM DELETE */
+function confirmDelete() {
+    return confirm("Are you sure you want to delete all chat history?");
 }
 </script>
 

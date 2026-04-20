@@ -18,6 +18,7 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
+/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -67,6 +68,7 @@ body {
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .messages {
@@ -140,9 +142,12 @@ body {
 <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
 
 <ul class="dropdown-menu dropdown-menu-dark">
+
 <li>
 <button class="dropdown-item"
-onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">Rename</button>
+onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
+Rename
+</button>
 </li>
 
 <li>
@@ -150,6 +155,7 @@ onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">Rename</button>
 <button class="dropdown-item text-danger">Delete</button>
 </form>
 </li>
+
 </ul>
 </div>
 
@@ -192,7 +198,10 @@ onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">Rename</button>
 <div class="input-area">
 <form onsubmit="sendMessage(event)">
 <div class="input-group">
-<input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+<input class="form-control input-box"
+       id="userInput"
+       placeholder="Ask anything..."
+       required>
 <button class="btn btn-ai text-white">Send</button>
 </div>
 </form>
@@ -205,16 +214,16 @@ onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">Rename</button>
 
 <script>
 
-// sidebar
+// toggle sidebar
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// scroll
+// auto scroll
 const chatBox = document.getElementById("chatBox");
 window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
-// rename
+// rename chat
 function editChat(id, oldTitle) {
     let newTitle = prompt("Edit chat name:", oldTitle);
     if (!newTitle) return;
@@ -233,29 +242,29 @@ function editChat(id, oldTitle) {
     form.submit();
 }
 
-// 🔥 STREAMING CHAT
+// 🔥 STREAMING FIXED
 function sendMessage(e) {
     e.preventDefault();
 
-    const input = document.querySelector("input[name='input']");
-    const text = input.value;
+    const input = document.getElementById("userInput");
+    const text = input.value.trim();
+    if (!text) return;
+
     input.value = "";
 
     // user message
     chatBox.innerHTML += `<div class="user-box">${text}</div>`;
 
-    // bot message
+    // bot message container
     let botDiv = document.createElement("div");
     botDiv.className = "response-box typing";
     chatBox.appendChild(botDiv);
 
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    const es = new EventSourcePolyfill("/stream", {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: "input=" + encodeURIComponent(text)
-    });
+    // ⚠️ IMPORTANT: EventSource does NOT support POST
+    // So we use GET with query param
+    const es = new EventSource("/stream?input=" + encodeURIComponent(text));
 
     es.onmessage = function(event) {
         if (event.data === "[DONE]") {
@@ -266,6 +275,12 @@ function sendMessage(e) {
 
         botDiv.innerHTML += event.data;
         chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    es.onerror = function() {
+        botDiv.classList.remove("typing");
+        botDiv.innerHTML += "<br><span style='color:red'>Error loading response</span>";
+        es.close();
     };
 }
 

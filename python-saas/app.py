@@ -1,20 +1,19 @@
-from flask import Flask, request, render_template, redirect, session, Response, stream_with_context
+from flask import Flask, request, render_template, redirect, session
 import sqlite3
 import os
-import re   # ✅ ADDED
 from dotenv import load_dotenv
+import markdown
 from openai import OpenAI
 
+# ---------------- ENV ----------------
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
+# 🔥 FIX: stable DB path (no data loss)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
-
-def get_db():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 # ---------------- AI ----------------
 client = OpenAI(
@@ -22,7 +21,27 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ---------------- DB INIT ----------------
+def query_ai(prompt):
+    try:
+        res = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "Answer briefly."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300
+        )
+        return res.choices[0].message.content
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def generate_image(prompt):
+    return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
+
+# ---------------- DB ----------------
+def get_db():
+    return sqlite3.connect(DB_PATH)
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -61,100 +80,173 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
+    # fresh screen
     session.pop("conv_id", None)
 
     conn = get_db()
     c = conn.cursor()
+
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
+
     conn.close()
 
-    return render_template("dashboard.html",
+    return render_template(
+        "dashboard.html",
         user=session["user"],
         chat=[],
         conversations=conversations,
         active_chat=None
     )
 
-# ---------------- STREAM ----------------
-@app.route("/stream")
-def stream():
+# ---------------- NEW CHAT ----------------
+@app.route("/new_chat")
+def new_chat():
     if "user" not in session:
-        return "Unauthorized", 401
+        return redirect("/login")
 
-    user_input = request.args.get("input")
+    session.pop("conv_id", None)
+    return redirect("/")
 
-    def generate():
-        conn = get_db()
-        c = conn.cursor()
+# ---------------- OPEN CHAT ----------------
+@app.route("/chat/<int:conv_id>")
+def open_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
 
-        conv_id = session.get("conv_id")
+    conn = get_db()
+    c = conn.cursor()
 
-        if not conv_id:
-            title = user_input[:30] if user_input else "New Chat"
-            c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
-                      (session["user"], title))
-            conv_id = c.lastrowid
-            session["conv_id"] = conv_id
-            conn.commit()
+    # validate chat
+    c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
+              (conv_id, session["user"]))
+    if not c.fetchone():
+        conn.close()
+        return redirect("/")
 
-        full_text = ""
+    session["conv_id"] = conv_id
 
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "STRICT FORMAT:\n"
-                            "- If user asks for points → return numbered list (1., 2., 3.)\n"
-                            "- Each point MUST be on new line\n"
-                            "- Do NOT combine into paragraph\n"
-                            "- Keep headings bold\n"
-                        )
-                    },
-                    {"role": "user", "content": user_input}
-                ],
-                temperature=0.5,
-                stream=True
-            )
+    # messages
+    c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
+              (conv_id,))
+    rows = c.fetchall()
 
-            for chunk in response:
-                token = chunk.choices[0].delta.content or ""
-                if token:
-                    full_text += token
-                    yield f"data: {token}\n\n"
+    # conversations
+    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+              (session["user"],))
+    conversations = c.fetchall()
 
-        except Exception as e:
-            yield f"data: Error: {str(e)}\n\n"
+    conn.close()
 
-        # 🔥 FORCE FORMAT USING REGEX
-        formatted = re.sub(r'(\d+\.)', r'\n\1', full_text)  # new line before numbers
+    chat = []
+    for r in rows:
+        chat.append({
+            "id": r[0],
+            "type": r[3],
+            "user": r[1],
+            "bot": r[2] if r[3] == "text" else None,
+            "image": r[2] if r[3] == "image" else None
+        })
 
-        # remove duplicate new lines
-        formatted = re.sub(r'\n+', '\n', formatted).strip()
+    return render_template(
+        "dashboard.html",
+        user=session["user"],
+        chat=chat,
+        conversations=conversations,
+        active_chat=conv_id
+    )
 
-        # save formatted
-        c.execute("""
-            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (?, ?, ?, ?, ?)
-        """, (conv_id, session["user"], user_input, formatted, "text"))
+# ---------------- DELETE CHAT ----------------
+@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
+def delete_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
+    c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+    conn.commit()
+
+    # go to another chat
+    c.execute("SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
+              (session["user"],))
+    next_chat = c.fetchone()
+
+    conn.close()
+
+    if next_chat:
+        return redirect(f"/chat/{next_chat[0]}")
+    else:
+        session.pop("conv_id", None)
+        return redirect("/")
+
+# ---------------- EDIT CHAT TITLE ----------------
+@app.route("/edit_chat/<int:conv_id>", methods=["POST"])
+def edit_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    title = request.form.get("title")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
+              (title, conv_id, session["user"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/chat/{conv_id}")
+
+# ---------------- TOOL ----------------
+@app.route("/tool", methods=["POST"])
+def tool():
+    if "user" not in session:
+        return redirect("/login")
+
+    user_input = request.form.get("input")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    conv_id = session.get("conv_id")
+
+    # create chat only when user sends first message
+    if not conv_id:
+        title = user_input[:30]
+
+        c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
+                  (session["user"], title))
+
+        conv_id = c.lastrowid
+        session["conv_id"] = conv_id
+
+    # IMAGE
+    if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
+        img = generate_image(user_input)
+
+        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+                  (conv_id, session["user"], user_input, img, "image"))
 
         conn.commit()
         conn.close()
+        return redirect(f"/chat/{conv_id}")
 
-        yield "data: [DONE]\n\n"
+    # TEXT
+    result = query_ai(user_input)
+    formatted = markdown.markdown(result)
 
-    return Response(
-        stream_with_context(generate()),
-        mimetype="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no"
-        }
-    )
+    c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+              (conv_id, session["user"], user_input, formatted, "text"))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/chat/{conv_id}")
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
@@ -167,12 +259,15 @@ def login():
 
         conn = get_db()
         c = conn.cursor()
+
         c.execute("SELECT password FROM users WHERE username=?", (user,))
         data = c.fetchone()
+
         conn.close()
 
         if data and pwd == data[0]:
             session["user"] = user
+            session.pop("conv_id", None)
             return redirect("/")
         else:
             error = "Invalid credentials"
@@ -191,10 +286,14 @@ def register():
         try:
             conn = get_db()
             c = conn.cursor()
+
             c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+
             conn.commit()
             conn.close()
+
             return redirect("/login")
+
         except sqlite3.IntegrityError:
             error = "Username exists"
 
@@ -208,4 +307,4 @@ def logout():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True)
+    app.run(debug=True)

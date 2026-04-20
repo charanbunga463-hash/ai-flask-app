@@ -11,12 +11,12 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# ---------------- DB PATH (FIXED) ----------------
+# ---------------- DB PATH ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
 
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 # ---------------- AI ----------------
 client = OpenAI(
@@ -24,7 +24,7 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ---------------- DB INIT ----------------
+# ---------------- INIT DB ----------------
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -74,8 +74,7 @@ def home():
 
     conn.close()
 
-    return render_template(
-        "dashboard.html",
+    return render_template("dashboard.html",
         user=session["user"],
         chat=[],
         conversations=conversations,
@@ -100,7 +99,6 @@ def open_chat(conv_id):
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
-        conn.close()
         return redirect("/")
 
     session["conv_id"] = conv_id
@@ -125,15 +123,14 @@ def open_chat(conv_id):
             "image": r[2] if r[3] == "image" else None
         })
 
-    return render_template(
-        "dashboard.html",
+    return render_template("dashboard.html",
         user=session["user"],
         chat=chat,
         conversations=conversations,
         active_chat=conv_id
     )
 
-# ---------------- DELETE CHAT ----------------
+# ---------------- DELETE ----------------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])
 def delete_chat(conv_id):
     conn = get_db()
@@ -155,7 +152,7 @@ def delete_chat(conv_id):
         session.pop("conv_id", None)
         return redirect("/")
 
-# ---------------- EDIT CHAT ----------------
+# ---------------- EDIT TITLE ----------------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
     title = request.form.get("title")
@@ -171,31 +168,31 @@ def edit_chat(conv_id):
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- STREAM (🔥 MAIN FEATURE) ----------------
+# ---------------- STREAM (FIXED) ----------------
 @app.route("/stream", methods=["POST"])
 def stream():
     if "user" not in session:
-        return redirect("/login")
+        return "Unauthorized", 401
 
     user_input = request.form.get("input")
 
-    conn = get_db()
-    c = conn.cursor()
-
-    conv_id = session.get("conv_id")
-
-    # create chat if needed
-    if not conv_id:
-        title = user_input[:30]
-
-        c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
-                  (session["user"], title))
-
-        conv_id = c.lastrowid
-        session["conv_id"] = conv_id
-        conn.commit()
-
     def generate():
+        conn = get_db()
+        c = conn.cursor()
+
+        conv_id = session.get("conv_id")
+
+        # create chat if needed
+        if not conv_id:
+            title = user_input[:30]
+
+            c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
+                      (session["user"], title))
+
+            conv_id = c.lastrowid
+            session["conv_id"] = conv_id
+            conn.commit()
+
         full_text = ""
 
         try:
@@ -209,27 +206,34 @@ def stream():
             )
 
             for chunk in response:
-                content = chunk.choices[0].delta.content or ""
-                full_text += content
-                yield f"data: {content}\n\n"
+                token = chunk.choices[0].delta.content or ""
+                full_text += token
+                yield f"data: {token}\n\n"
 
         except Exception as e:
             yield f"data: Error: {str(e)}\n\n"
 
-        # save to DB after complete
+        # save AFTER stream
         formatted = markdown.markdown(full_text)
 
-        c.execute(
-            "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
-            (conv_id, session["user"], user_input, formatted, "text")
-        )
+        c.execute("""INSERT INTO chats 
+            (conversation_id, username, user_msg, bot_msg, type)
+            VALUES (?, ?, ?, ?, ?)""",
+            (conv_id, session["user"], user_input, formatted, "text"))
 
         conn.commit()
         conn.close()
 
         yield "data: [DONE]\n\n"
 
-    return Response(stream_with_context(generate()), mimetype="text/event-stream")
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"   # 🔥 important for Render
+        }
+    )
 
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
@@ -245,7 +249,6 @@ def login():
 
         c.execute("SELECT password FROM users WHERE username=?", (user,))
         data = c.fetchone()
-
         conn.close()
 
         if data and pwd == data[0]:
@@ -269,12 +272,9 @@ def register():
         try:
             conn = get_db()
             c = conn.cursor()
-
             c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
-
             conn.commit()
             conn.close()
-
             return redirect("/login")
 
         except sqlite3.IntegrityError:
@@ -290,4 +290,4 @@ def logout():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

@@ -1,83 +1,242 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>AI Tool</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
 body {
-    background:#0f172a;
-    color:white;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Layout */
+.main-container { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    background-color: #0f172a;
+    border-right: 1px solid #334155;
+    padding: 15px;
+    position: fixed;
+    left: -300px;
+    top: 0;
+    height: 100%;
+    transition: 0.3s;
+}
+.sidebar.open { left: 0; }
+
+.history-box {
+    background-color: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+.history-box.active { background-color: #334155; }
+
+/* Chat */
+.chat-area { width: 100%; display: flex; flex-direction: column; }
+
+.top-bar {
+    padding: 10px 15px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
 }
 
 .messages {
-    height:80vh;
-    overflow:auto;
-    padding:20px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
 }
 
+/* Bubbles */
 .user-box {
-    background:#1e40af;
-    padding:10px;
-    margin:10px 0;
-    border-radius:10px;
-    text-align:right;
+    background-color: #1e40af;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: right;
+    margin-top: 10px;
 }
 
-.bot-box {
-    background:#020617;
-    padding:10px;
-    margin:10px 0;
-    border-radius:10px;
-
-    /* 🔥 IMPORTANT */
+.response-box {
+    background-color: #020617;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid #334155;
     white-space: pre-wrap;
+}
+
+/* Markdown-like styling */
+.response-box h1, .response-box h2, .response-box h3 {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.response-box ul, .response-box ol {
+    padding-left: 20px;
+}
+
+.response-box li {
+    margin-bottom: 5px;
+}
+
+/* typing */
+.typing::after {
+    content: "|";
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    0%,100% {opacity:0;}
+    50% {opacity:1;}
+}
+
+/* Input */
+.input-area {
+    padding: 15px;
+    border-top: 1px solid #334155;
+    background-color: #1e293b;
+}
+
+.input-box {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    color: white;
+}
+
+.btn-ai {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 </style>
 </head>
 
 <body>
 
-<div class="messages" id="chatBox"></div>
+<div class="main-container">
 
-<form onsubmit="sendMessage(event)" class="p-3">
-<input id="input" class="form-control" placeholder="Ask anything">
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar">
+<h5>🕘 Chats</h5>
+<a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
+
+{% for conv in conversations %}
+<div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
+    <a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
+</div>
+{% endfor %}
+</div>
+
+<!-- Chat -->
+<div class="chat-area">
+
+<div class="top-bar">
+    <h5>🤖 AI Assistant</h5>
+    <div>
+        <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
+        <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+    </div>
+</div>
+
+<div class="messages" id="chatBox">
+
+{% for msg in chat %}
+<div class="user-box">{{ msg.user }}</div>
+<div class="response-box">{{ msg.bot }}</div>
+{% endfor %}
+
+</div>
+
+<!-- Input -->
+<div class="input-area">
+<form onsubmit="sendMessage(event)">
+<div class="input-group">
+<input class="form-control input-box" id="userInput" placeholder="Ask anything..." required>
+<button class="btn btn-ai text-white">Send</button>
+</div>
 </form>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 
-const chatBox = document.getElementById("chatBox");
+// toggle sidebar
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("open");
+}
 
-function sendMessage(e){
+// scroll
+const chatBox = document.getElementById("chatBox");
+window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
+
+// 🔥 FORMAT FUNCTION (IMPORTANT)
+function formatText(text) {
+    // convert numbered list into proper lines
+    text = text.replace(/(\d+\.)/g, "\n$1");
+
+    // bold headings
+    text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+    // line breaks
+    text = text.replace(/\n/g, "<br>");
+
+    return text;
+}
+
+// STREAM
+function sendMessage(e) {
     e.preventDefault();
 
-    let input = document.getElementById("input");
-    let text = input.value;
+    const input = document.getElementById("userInput");
+    const text = input.value.trim();
+    if (!text) return;
+
     input.value = "";
 
-    // user
-    let userDiv = document.createElement("div");
-    userDiv.className="user-box";
+    // user msg
+    const userDiv = document.createElement("div");
+    userDiv.className = "user-box";
     userDiv.textContent = text;
     chatBox.appendChild(userDiv);
 
-    // bot
-    let botDiv = document.createElement("div");
-    botDiv.className="bot-box";
+    // bot msg
+    const botDiv = document.createElement("div");
+    botDiv.className = "response-box typing";
     chatBox.appendChild(botDiv);
 
-    let es = new EventSource("/stream?input="+encodeURIComponent(text));
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-    es.onmessage = function(e){
-        if(e.data === "[DONE]"){
+    const es = new EventSource("/stream?input=" + encodeURIComponent(text));
+
+    let fullText = "";
+
+    es.onmessage = function(event) {
+        if (event.data === "[DONE]") {
+            botDiv.classList.remove("typing");
+            botDiv.innerHTML = formatText(fullText); // ✅ FINAL FORMAT
             es.close();
             return;
         }
 
-        // ✅ RAW OUTPUT (NO FORMAT)
-        botDiv.textContent += e.data;
+        fullText += event.data;
+        botDiv.textContent = fullText; // live typing
         chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    es.onerror = function() {
+        botDiv.classList.remove("typing");
+        botDiv.textContent += "\nError loading response";
+        es.close();
     };
 }
 

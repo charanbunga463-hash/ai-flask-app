@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# ---------------- AI SETUP ----------------
+# ---------------- AI ----------------
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
@@ -33,10 +33,9 @@ def query_ai(prompt):
 
 # ---------------- IMAGE ----------------
 def generate_image(prompt):
-    prompt = prompt.replace(" ", "%20")
-    return f"https://image.pollinations.ai/prompt/{prompt}"
+    return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
 
-# ---------------- DATABASE ----------------
+# ---------------- DB ----------------
 def init_db():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
@@ -69,29 +68,32 @@ def home():
 
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
-    c.execute("SELECT user_msg, bot_msg, type FROM chats WHERE username=? ORDER BY id ASC",
+    c.execute("SELECT id, user_msg, bot_msg, type FROM chats WHERE username=? ORDER BY id ASC",
               (session["user"],))
     data = c.fetchall()
     conn.close()
 
     chat = []
     for row in data:
-        if row[2] == "text":
-            chat.append({"type": "text", "user": row[0], "bot": row[1]})
+        if row[3] == "text":
+            chat.append({"id": row[0], "type": "text", "user": row[1], "bot": row[2]})
         else:
-            chat.append({"type": "image", "user": row[0], "image": row[1]})
+            chat.append({"id": row[0], "type": "image", "user": row[1], "image": row[2]})
 
-    return render_template("dashboard.html", user=session["user"], chat=chat)
+    return render_template("dashboard.html", chat=chat, user=session["user"])
 
-# ---------------- DELETE HISTORY ----------------
-@app.route("/delete_history", methods=["POST"])
-def delete_history():
+# ---------------- DELETE SINGLE MESSAGE ----------------
+@app.route("/delete_message/<int:msg_id>", methods=["POST"])
+def delete_message(msg_id):
     if "user" not in session:
         return redirect("/login")
 
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
-    c.execute("DELETE FROM chats WHERE username=?", (session["user"],))
+
+    # ✅ Delete only user's message (safe)
+    c.execute("DELETE FROM chats WHERE id=? AND username=?", (msg_id, session["user"]))
+
     conn.commit()
     conn.close()
 

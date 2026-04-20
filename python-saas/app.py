@@ -22,7 +22,7 @@ def query_ai(prompt):
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Answer only current question."},
+                {"role": "system", "content": "Answer clearly and concisely."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=300
@@ -35,19 +35,17 @@ def query_ai(prompt):
 def generate_image(prompt):
     return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
 
-# ---------------- DATABASE ----------------
+# ---------------- DB ----------------
 def init_db():
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # USERS
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )''')
 
-    # CONVERSATIONS
     c.execute('''CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
@@ -55,7 +53,6 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
 
-    # CHATS
     c.execute('''CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER,
@@ -77,13 +74,9 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
-    # 🔥 Always reset conversation on refresh
-    session.pop("conv_id", None)
-
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # Load conversations
     c.execute(
         "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
         (session["user"],)
@@ -121,9 +114,9 @@ def new_chat():
 
     return redirect(f"/chat/{session['conv_id']}")
 
-# ---------------- SWITCH CHAT ----------------
+# ---------------- OPEN CHAT ----------------
 @app.route("/chat/<int:conv_id>")
-def switch_chat(conv_id):
+def open_chat(conv_id):
     if "user" not in session:
         return redirect("/login")
 
@@ -132,14 +125,12 @@ def switch_chat(conv_id):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
 
-    # Conversations
     c.execute(
         "SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
         (session["user"],)
     )
     conversations = c.fetchall()
 
-    # Messages
     c.execute(
         "SELECT id, user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id ASC",
         (conv_id,)
@@ -188,7 +179,8 @@ def delete_chat(conv_id):
     conn.commit()
     conn.close()
 
-    session.pop("conv_id", None)
+    if session.get("conv_id") == conv_id:
+        session.pop("conv_id", None)
 
     return redirect("/")
 
@@ -211,7 +203,59 @@ def delete_message(msg_id):
 
     return redirect(f"/chat/{session.get('conv_id')}")
 
-# ---------------- LOGIN ----------------
+# ---------------- TOOL ----------------
+@app.route("/tool", methods=["POST"])
+def tool():
+    if "user" not in session:
+        return redirect("/login")
+
+    user_input = request.form.get("input")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    conv_id = session.get("conv_id")
+
+    # 🔥 AUTO CREATE CHAT IF NOT EXISTS
+    if not conv_id:
+        title = user_input[:25] if user_input else "New Chat"
+
+        c.execute(
+            "INSERT INTO conversations (username, title) VALUES (?, ?)",
+            (session["user"], title)
+        )
+
+        conv_id = c.lastrowid
+        session["conv_id"] = conv_id
+
+    # ---------------- IMAGE ----------------
+    if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]):
+        image_url = generate_image(user_input)
+
+        c.execute(
+            "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+            (conv_id, session["user"], user_input, image_url, "image")
+        )
+
+        conn.commit()
+        conn.close()
+        return redirect(f"/chat/{conv_id}")
+
+    # ---------------- TEXT ----------------
+    result = query_ai(user_input)
+    formatted = markdown.markdown(result)
+
+    c.execute(
+        "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
+        (conv_id, session["user"], user_input, formatted, "text")
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/chat/{conv_id}")
+
+# ---------------- AUTH ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -228,13 +272,13 @@ def login():
 
         if data and pwd == data[0]:
             session["user"] = user
+            session.pop("conv_id", None)  # NEW SESSION CHAT LIKE CHATGPT
             return redirect("/")
         else:
             error = "Invalid credentials"
 
     return render_template("login.html", error=error)
 
-# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
@@ -257,55 +301,6 @@ def register():
             error = "Username exists"
 
     return render_template("register.html", error=error)
-
-# ---------------- TOOL ----------------
-@app.route("/tool", methods=["POST"])
-def tool():
-    if "user" not in session:
-        return redirect("/login")
-
-    user_input = request.form.get("input")
-
-    conn = sqlite3.connect("users.db")
-    c = conn.cursor()
-
-    conv_id = session.get("conv_id")
-
-    # If no chat → force create
-    if not conv_id:
-        c.execute(
-            "INSERT INTO conversations (username, title) VALUES (?, ?)",
-            (session["user"], user_input[:20])
-        )
-        conv_id = c.lastrowid
-        session["conv_id"] = conv_id
-
-    # IMAGE
-    if any(k in user_input.lower() for k in ["image", "draw", "picture", "photo"]):
-        image_url = generate_image(user_input)
-
-        c.execute(
-            "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
-            (conv_id, session["user"], user_input, image_url, "image")
-        )
-
-        conn.commit()
-        conn.close()
-        return redirect(f"/chat/{conv_id}")
-
-    # TEXT
-    result = query_ai(user_input)
-    formatted = markdown.markdown(result)
-
-    c.execute(
-        "INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (?, ?, ?, ?, ?)",
-        (conv_id, session["user"], user_input, formatted, "text")
-    )
-
-    conn.commit()
-    conn.close()
-
-    return redirect(f"/chat/{conv_id}")
 
 # ---------------- LOGOUT ----------------
 @app.route("/logout")

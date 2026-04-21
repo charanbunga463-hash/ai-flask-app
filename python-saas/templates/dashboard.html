@@ -43,11 +43,9 @@ body {
     padding: 15px;
     overflow-y: auto;
 }
-.sidebar.open {
-    left: 0;
-}
+.sidebar.open { left: 0; }
 
-/* CHAT AREA */
+/* CHAT */
 .chat-area {
     display: flex;
     flex-direction: column;
@@ -73,7 +71,7 @@ body {
     background-color: #1e293b;
 }
 
-/* Chat bubbles */
+/* Bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -109,14 +107,11 @@ body {
     display: flex;
     align-items: center;
 }
-.history-box.active {
-    background-color: #334155;
-}
+.history-box.active { background-color: #334155; }
 
 .chat-title { flex: 1; }
 .rename-input { display: none; flex: 1; }
 
-/* Mic active */
 .mic-active {
     background: red !important;
     color: white !important;
@@ -126,13 +121,11 @@ body {
 
 <body>
 
-<!-- MAIN ICON -->
+<!-- ICON -->
 <div id="mainIcon" class="main-icon"
      onclick="openSidebar()"
      onmouseenter="hoverIcon(true)"
-     onmouseleave="hoverIcon(false)">
-    🤖
-</div>
+     onmouseleave="hoverIcon(false)">🤖</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
@@ -148,7 +141,7 @@ body {
     <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
 
         <div class="chat-title" id="title-{{ conv[0] }}">
-            <a href="/chat/{{ conv[0] }}" style="color:white; text-decoration:none;">
+            <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;">
                 {{ conv[1] }}
             </a>
         </div>
@@ -157,19 +150,15 @@ body {
                id="input-{{ conv[0] }}"
                class="form-control form-control-sm rename-input"
                value="{{ conv[1] }}"
-               onkeydown="handleRename(event, '{{ conv[0] }}')">
+               onkeydown="handleRename(event,'{{ conv[0] }}')">
 
         <div class="dropdown ms-2">
             <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-
             <ul class="dropdown-menu dropdown-menu-dark">
                 <li>
                     <button class="dropdown-item"
-                            onclick="enableRename('{{ conv[0] }}')">
-                        Rename
-                    </button>
+                            onclick="enableRename('{{ conv[0] }}')">Rename</button>
                 </li>
-
                 <li>
                     <form method="POST" action="/delete_chat/{{ conv[0] }}">
                         <button class="dropdown-item text-danger">Delete</button>
@@ -180,7 +169,6 @@ body {
 
     </div>
     {% endfor %}
-
 </div>
 
 <!-- CHAT -->
@@ -207,14 +195,13 @@ body {
         {% endfor %}
     </div>
 
-    <!-- INPUT + MIC -->
+    <!-- INPUT -->
     <div class="input-area">
-        <form method="POST" action="/tool">
+        <form onsubmit="sendMessage(event)">
             <div class="input-group">
 
                 <input class="form-control input-box"
                        id="chatInput"
-                       name="input"
                        placeholder="Ask anything..."
                        required>
 
@@ -235,99 +222,88 @@ body {
 
 <script>
 
+// Sidebar logic
 let isOpen = false;
+function hoverIcon(e){ if(!isOpen) mainIcon.innerHTML = e?"📜":"🤖"; }
+function openSidebar(){ isOpen=true; sidebar.classList.add("open"); mainIcon.innerHTML="📜"; }
+function closeSidebar(){ isOpen=false; sidebar.classList.remove("open"); mainIcon.innerHTML="🤖"; }
 
-// ICON HOVER
-function hoverIcon(enter) {
-    let icon = document.getElementById("mainIcon");
-    if (!isOpen) icon.innerHTML = enter ? "📜" : "🤖";
-}
+// Auto scroll
+window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
 
-// OPEN SIDEBAR
-function openSidebar() {
-    isOpen = true;
-    document.getElementById("sidebar").classList.add("open");
-    document.getElementById("mainIcon").innerHTML = "📜";
-}
-
-// CLOSE SIDEBAR
-function closeSidebar() {
-    isOpen = false;
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("mainIcon").innerHTML = "🤖";
-}
-
-// SCROLL
-window.onload = () => {
-    let box = document.getElementById("chatBox");
-    if (box) box.scrollTop = box.scrollHeight;
-};
-
-// RENAME
-function enableRename(id) {
-    document.getElementById("title-" + id).style.display = "none";
-    let input = document.getElementById("input-" + id);
-    input.style.display = "block";
+// Rename
+function enableRename(id){
+    title = document.getElementById("title-"+id);
+    input = document.getElementById("input-"+id);
+    title.style.display="none";
+    input.style.display="block";
     input.focus();
 }
-
-function handleRename(e, id) {
-    if (e.key === "Enter") {
-        let val = e.target.value.trim();
-        if (!val) return;
-
-        let form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/edit_chat/" + id;
-
-        let inp = document.createElement("input");
-        inp.type = "hidden";
-        inp.name = "title";
-        inp.value = val;
-
-        form.appendChild(inp);
-        document.body.appendChild(form);
-        form.submit();
+function handleRename(e,id){
+    if(e.key==="Enter"){
+        let val=e.target.value.trim();
+        if(!val) return;
+        let f=document.createElement("form");
+        f.method="POST"; f.action="/edit_chat/"+id;
+        let i=document.createElement("input");
+        i.type="hidden"; i.name="title"; i.value=val;
+        f.appendChild(i); document.body.appendChild(f); f.submit();
     }
 }
 
-// 🎤 VOICE
-let recognition;
-let isListening = false;
+// 🎤 Voice
+let recognition, isListening=false;
+function startListening(){
+    const btn = micBtn;
+    if(!('webkitSpeechRecognition'in window)){ alert("No voice"); return; }
 
-function startListening() {
-    const btn = document.getElementById("micBtn");
-
-    if (!('webkitSpeechRecognition' in window)) {
-        alert("Voice not supported");
-        return;
-    }
-
-    if (isListening) {
-        recognition.stop();
-        btn.classList.remove("mic-active");
-        isListening = false;
-        return;
+    if(isListening){
+        recognition.stop(); btn.classList.remove("mic-active"); isListening=false; return;
     }
 
     recognition = new webkitSpeechRecognition();
-    recognition.lang = "en-US";
+    recognition.lang="en-US";
     recognition.start();
 
     btn.classList.add("mic-active");
-    isListening = true;
+    isListening=true;
 
-    recognition.onresult = function(e) {
-        document.getElementById("chatInput").value =
-            e.results[0][0].transcript;
-    };
-
-    recognition.onend = function() {
-        btn.classList.remove("mic-active");
-        isListening = false;
-    };
+    recognition.onresult = e => chatInput.value = e.results[0][0].transcript;
+    recognition.onend = () => { btn.classList.remove("mic-active"); isListening=false; };
 }
 
+// 🔥 STREAMING
+async function sendMessage(e){
+    e.preventDefault();
+
+    let input = chatInput.value.trim();
+    if(!input) return;
+
+    chatBox.innerHTML += `<div class="user-box">${input}</div>`;
+
+    let botDiv = document.createElement("div");
+    botDiv.className="response-box";
+    chatBox.appendChild(botDiv);
+
+    chatInput.value="";
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const res = await fetch("/stream",{
+        method:"POST",
+        body:new URLSearchParams({input})
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while(true){
+        const {done,value} = await reader.read();
+        if(done) break;
+
+        botDiv.innerHTML += decoder.decode(value);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+}
 </script>
 
 </body>

@@ -43,7 +43,9 @@ body {
     padding: 15px;
     overflow-y: auto;
 }
-.sidebar.open { left: 0; }
+.sidebar.open {
+    left: 0;
+}
 
 /* CHAT AREA */
 .chat-area {
@@ -130,10 +132,9 @@ body {
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
 
-    <!-- TOP CLOSE BUTTON -->
     <div class="d-flex justify-content-between mb-3">
         <h5>🕘 Chats</h5>
-        <button class="btn btn-sm btn-outline-light" onclick="toggleSidebar()">📜</button>
+        <button class="btn btn-sm btn-outline-light" onclick="closeSidebar()">📜</button>
     </div>
 
     <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
@@ -218,19 +219,27 @@ body {
 
 let isOpen = false;
 
-// Toggle sidebar
-function toggleSidebar() {
-    isOpen = !isOpen;
-    document.getElementById("sidebar").classList.toggle("open");
-}
-
-// Icon hover change
+// Hover icon change
 function hoverIcon(enter) {
     let icon = document.getElementById("mainIcon");
 
     if (!isOpen) {
         icon.innerHTML = enter ? "📜" : "🤖";
     }
+}
+
+// Toggle sidebar
+function toggleSidebar() {
+    isOpen = true;
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("mainIcon").innerHTML = "📜";
+}
+
+// Close sidebar
+function closeSidebar() {
+    isOpen = false;
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("mainIcon").innerHTML = "🤖";
 }
 
 // Scroll bottom

@@ -2,9 +2,8 @@ Flask==3.0.3
 gunicorn==22.0.0
 python-dotenv==1.0.1
 markdown==3.6
-openai==1.30.1
-PyPDF2==3.0.1
 
-gtts==2.5.4
-click==8.1.7
-typer==0.9.0
+openai==1.30.1
+httpx==0.27.0   # ✅ IMPORTANT FIX
+
+PyPDF2==3.0.1

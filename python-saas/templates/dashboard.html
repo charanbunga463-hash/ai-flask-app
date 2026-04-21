@@ -9,113 +9,121 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body {
-    background-color: #0f172a;
-    color: #e2e8f0;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
+body{
+    background:#0f172a;
+    color:#e2e8f0;
+    font-family:'Segoe UI',sans-serif;
+    margin:0;
 }
 
 /* ICON */
-.main-icon {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    font-size: 22px;
-    background: #1e293b;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    z-index: 1100;
+.main-icon{
+    position:fixed;
+    top:10px;
+    left:10px;
+    font-size:22px;
+    background:#1e293b;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    z-index:1100;
+    transition:0.2s;
 }
 
 /* SIDEBAR */
-.sidebar {
-    width: 280px;
-    background-color: #0f172a;
-    border-right: 1px solid #334155;
-    height: 100vh;
-    position: fixed;
-    left: -280px;
-    top: 0;
-    transition: 0.3s;
-    z-index: 1000;
-    padding: 15px;
-    overflow-y: auto;
+.sidebar{
+    width:280px;
+    background:#0f172a;
+    border-right:1px solid #334155;
+    height:100vh;
+    position:fixed;
+    left:-280px;
+    top:0;
+    transition:0.3s;
+    z-index:1000;
+    padding:15px;
+    overflow-y:auto;
 }
-.sidebar.open { left: 0; }
+.sidebar.open{ left:0; }
 
 /* CHAT */
-.chat-area {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
+.chat-area{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
 }
 
-.top-bar {
-    padding: 10px 15px;
-    border-bottom: 1px solid #334155;
-    display: flex;
-    justify-content: space-between;
+.top-bar{
+    padding:10px 15px;
+    border-bottom:1px solid #334155;
+    display:flex;
+    justify-content:space-between;
 }
 
-.messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
+.messages{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
 }
 
-.input-area {
-    padding: 15px;
-    border-top: 1px solid #334155;
-    background-color: #1e293b;
+/* INPUT */
+.input-area{
+    padding:15px;
+    border-top:1px solid #334155;
+    background:#1e293b;
 }
 
-/* Bubbles */
-.user-box {
-    background-color: #1e40af;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: right;
-    margin-top: 10px;
+/* BUBBLES */
+.user-box{
+    background:#1e40af;
+    padding:10px;
+    border-radius:10px;
+    text-align:right;
+    margin-top:10px;
 }
 
-.response-box {
-    background-color: #020617;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 10px;
-    border: 1px solid #334155;
+.response-box{
+    background:#020617;
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
+    border:1px solid #334155;
 }
 
-.input-box {
-    background-color: #0f172a;
-    border: 1px solid #334155;
-    color: white;
+/* INPUT */
+.input-box{
+    background:#0f172a;
+    border:1px solid #334155;
+    color:white;
 }
 
-.btn-ai {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+.btn-ai{
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);
 }
 
 /* HISTORY */
-.history-box {
-    background-color: #1e293b;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
+.history-box{
+    background:#1e293b;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
 }
-.history-box.active { background-color: #334155; }
+.history-box.active{ background:#334155; }
 
-.chat-title { flex: 1; }
-.rename-input { display: none; flex: 1; }
+.chat-title{ flex:1; }
+.rename-input{ display:none; flex:1; }
+
+/* FILE */
+.file-input{
+    max-width:150px;
+}
 
 /* MIC */
-.mic-active {
-    background: red !important;
-    color: white !important;
+.mic-active{
+    background:red !important;
+    color:white !important;
 }
 </style>
 </head>
@@ -123,17 +131,14 @@ body {
 <body>
 
 <!-- MAIN ICON -->
-<div id="mainIcon" class="main-icon"
-     onclick="openSidebar()"
-     onmouseenter="hoverIcon(true)"
-     onmouseleave="hoverIcon(false)">🤖</div>
+<div id="mainIcon" class="main-icon">🤖</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
 
     <div class="d-flex justify-content-between mb-3">
         <h5>🕘 Chats</h5>
-        <button class="btn btn-sm btn-outline-light" onclick="closeSidebar()">📜</button>
+        <button class="btn btn-sm btn-outline-light" id="closeBtn">📜</button>
     </div>
 
     <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
@@ -158,7 +163,7 @@ body {
             <ul class="dropdown-menu dropdown-menu-dark">
                 <li>
                     <button class="dropdown-item"
-                            onclick="enableRename('{{ conv[0] }}')">Rename</button>
+                        onclick="enableRename('{{ conv[0] }}')">Rename</button>
                 </li>
                 <li>
                     <form method="POST" action="/delete_chat/{{ conv[0] }}">
@@ -196,7 +201,7 @@ body {
         {% endfor %}
     </div>
 
-    <!-- INPUT + FILE + MIC -->
+    <!-- INPUT -->
     <div class="input-area">
         <form method="POST" action="/tool" enctype="multipart/form-data">
             <div class="input-group">
@@ -206,17 +211,16 @@ body {
                        name="input"
                        placeholder="Ask anything...">
 
-                <!-- 📎 FILE -->
+                <!-- FILE -->
                 <input type="file"
                        name="file"
-                       class="form-control"
+                       class="form-control file-input"
                        accept=".pdf,image/*">
 
-                <!-- 🎤 MIC -->
+                <!-- MIC -->
                 <button type="button"
                         id="micBtn"
-                        class="btn btn-outline-light"
-                        onclick="startListening()">🎤</button>
+                        class="btn btn-outline-light">🎤</button>
 
                 <button class="btn btn-ai text-white">Send</button>
 
@@ -230,46 +234,58 @@ body {
 
 <script>
 
-// Sidebar
+// ===== ELEMENTS =====
+const mainIcon = document.getElementById("mainIcon");
+const sidebar = document.getElementById("sidebar");
+const closeBtn = document.getElementById("closeBtn");
+
 let isOpen = false;
-function hoverIcon(e){
-    if(!isOpen) mainIcon.innerHTML = e ? "📜" : "🤖";
-}
-function openSidebar(){
+
+// ===== ICON BEHAVIOR =====
+mainIcon.addEventListener("mouseenter", () => {
+    if (!isOpen) mainIcon.innerHTML = "📜";
+});
+
+mainIcon.addEventListener("mouseleave", () => {
+    if (!isOpen) mainIcon.innerHTML = "🤖";
+});
+
+mainIcon.addEventListener("click", () => {
     isOpen = true;
     sidebar.classList.add("open");
     mainIcon.innerHTML = "📜";
-}
-function closeSidebar(){
+});
+
+closeBtn.addEventListener("click", () => {
     isOpen = false;
     sidebar.classList.remove("open");
     mainIcon.innerHTML = "🤖";
-}
+});
 
-// Scroll
+// ===== SCROLL =====
 window.onload = () => {
-    let box = document.getElementById("chatBox");
+    const box = document.getElementById("chatBox");
     if (box) box.scrollTop = box.scrollHeight;
 };
 
-// Rename
+// ===== RENAME =====
 function enableRename(id){
     document.getElementById("title-"+id).style.display="none";
-    let input = document.getElementById("input-"+id);
+    let input=document.getElementById("input-"+id);
     input.style.display="block";
     input.focus();
 }
 
 function handleRename(e,id){
     if(e.key==="Enter"){
-        let val = e.target.value.trim();
+        let val=e.target.value.trim();
         if(!val) return;
 
-        let form = document.createElement("form");
+        let form=document.createElement("form");
         form.method="POST";
         form.action="/edit_chat/"+id;
 
-        let inp = document.createElement("input");
+        let inp=document.createElement("input");
         inp.type="hidden";
         inp.name="title";
         inp.value=val;
@@ -280,41 +296,42 @@ function handleRename(e,id){
     }
 }
 
-// 🎤 Voice
-let recognition, isListening=false;
+// ===== VOICE =====
+let recognition;
+let isListening = false;
+const micBtn = document.getElementById("micBtn");
 
-function startListening(){
-    const btn = document.getElementById("micBtn");
+micBtn.addEventListener("click", () => {
 
-    if(!('webkitSpeechRecognition' in window)){
-        alert("Voice not supported");
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Voice not supported in this browser");
         return;
     }
 
-    if(isListening){
+    if (isListening) {
         recognition.stop();
-        btn.classList.remove("mic-active");
-        isListening=false;
+        micBtn.classList.remove("mic-active");
+        isListening = false;
         return;
     }
 
     recognition = new webkitSpeechRecognition();
-    recognition.lang="en-US";
+    recognition.lang = "en-US";
     recognition.start();
 
-    btn.classList.add("mic-active");
-    isListening=true;
+    micBtn.classList.add("mic-active");
+    isListening = true;
 
-    recognition.onresult = e => {
+    recognition.onresult = (e) => {
         document.getElementById("chatInput").value =
             e.results[0][0].transcript;
     };
 
     recognition.onend = () => {
-        btn.classList.remove("mic-active");
-        isListening=false;
+        micBtn.classList.remove("mic-active");
+        isListening = false;
     };
-}
+});
 
 </script>
 

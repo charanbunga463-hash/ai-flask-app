@@ -26,12 +26,12 @@ def query_ai(prompt):
         res = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Answer briefly."},
+                {"role": "system", "content": "Answer clearly and briefly."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=400
         )
-        return res.choices[0].message.content
+        return res.choices[0].message.content.strip()
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -40,12 +40,13 @@ def generate_chat_title(message):
         res = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Generate short title (max 5 words)."},
+                {"role": "system", "content": "Generate a short title (max 5 words)."},
                 {"role": "user", "content": message}
             ],
             max_tokens=20
         )
-        return res.choices[0].message.content.strip()
+        title = res.choices[0].message.content.strip()
+        return title if title else message[:30]
     except:
         return message[:30]
 
@@ -60,20 +61,23 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""CREATE TABLE IF NOT EXISTS users(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
     )""")
 
-    c.execute("""CREATE TABLE IF NOT EXISTS conversations(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS conversations(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
         title TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    c.execute("""CREATE TABLE IF NOT EXISTS chats(
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS chats(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         conversation_id INTEGER,
         username TEXT,
@@ -126,17 +130,25 @@ def open_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
+    # validate ownership
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
+        conn.close()
         return redirect("/")
 
     session["conv_id"] = conv_id
 
-    c.execute("SELECT user_msg, bot_msg, type FROM chats WHERE conversation_id=? ORDER BY id",
-              (conv_id,))
+    # fetch chats
+    c.execute("""
+        SELECT user_msg, bot_msg, type 
+        FROM chats 
+        WHERE conversation_id=? 
+        ORDER BY id
+    """, (conv_id,))
     rows = c.fetchall()
 
+    # fetch sidebar chats
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
@@ -161,6 +173,9 @@ def open_chat(conv_id):
 # ---------------- DELETE CHAT ----------------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])
 def delete_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
     conn = get_db()
     c = conn.cursor()
 
@@ -183,6 +198,9 @@ def delete_chat(conv_id):
 # ---------------- EDIT CHAT ----------------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
     title = request.form.get("title")
 
     conn = get_db()
@@ -210,9 +228,10 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # create chat
+    # create conversation
     if not conv_id:
-        title = generate_chat_title(user_input or (file.filename if file else "New Chat"))
+        base_title = user_input or (file.filename if file else "New Chat")
+        title = generate_chat_title(base_title)
 
         c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
                   (session["user"], title))
@@ -222,40 +241,43 @@ def tool():
 
     extracted_text = ""
 
-    # 📄 PDF
+    # -------- PDF --------
     if file and file.filename.endswith(".pdf"):
-        reader = PdfReader(file)
-        for page in reader.pages:
-            extracted_text += page.extract_text() or ""
+        try:
+            reader = PdfReader(file)
+            for page in reader.pages:
+                extracted_text += page.extract_text() or ""
+        except:
+            extracted_text = "Could not read PDF."
 
-    # 🖼 IMAGE (basic)
+    # -------- IMAGE --------
     elif file and file.mimetype.startswith("image"):
-        extracted_text = f"User uploaded image: {file.filename}. Describe it."
+        extracted_text = f"User uploaded image ({file.filename}). Describe it."
 
-    # combine
+    # combine prompt
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    # IMAGE GENERATION
-    if any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]) and not file:
+    # -------- IMAGE GENERATION --------
+    if user_input and any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]) and not file:
         img = generate_image(user_input)
 
-        c.execute("""INSERT INTO chats 
-            (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (?, ?, ?, ?, ?)""",
-                  (conv_id, session["user"], user_input, img, "image"))
+        c.execute("""
+            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (conv_id, session["user"], user_input, img, "image"))
 
         conn.commit()
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # TEXT RESPONSE
+    # -------- TEXT RESPONSE --------
     result = query_ai(final_prompt)
     formatted = markdown.markdown(result)
 
-    c.execute("""INSERT INTO chats 
-        (conversation_id, username, user_msg, bot_msg, type)
-        VALUES (?, ?, ?, ?, ?)""",
-              (conv_id, session["user"], user_input or file.filename, formatted, "text"))
+    c.execute("""
+        INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
+        VALUES (?, ?, ?, ?, ?)
+    """, (conv_id, session["user"], user_input or (file.filename if file else ""), formatted, "text"))
 
     conn.commit()
     conn.close()

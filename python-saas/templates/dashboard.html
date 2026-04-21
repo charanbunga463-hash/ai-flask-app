@@ -13,47 +13,58 @@ body {
     background-color: #0f172a;
     color: #e2e8f0;
     font-family: 'Segoe UI', sans-serif;
-}
-
-.main-container {
-    display: flex;
-    height: 100vh;
+    margin: 0;
 }
 
 /* SIDEBAR */
 .sidebar {
-    width: 300px;
+    width: 280px;
     background-color: #0f172a;
     border-right: 1px solid #334155;
-    overflow-y: auto;
-    padding: 15px;
+    height: 100vh;
     position: fixed;
-    left: -300px;
+    left: -280px;
     top: 0;
-    height: 100%;
     transition: 0.3s;
     z-index: 1000;
+    padding: 15px;
+    overflow-y: auto;
 }
-.sidebar.open { left: 0; }
 
-.history-box {
-    background-color: #1e293b;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
+/* Show on hover */
+.sidebar-hover-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 50px;
+    height: 100%;
+    z-index: 999;
 }
-.history-box.active { background-color: #334155; }
 
-.chat-title { flex: 1; font-size: 14px; }
-.rename-input { display: none; flex: 1; }
+/* Sidebar open */
+.sidebar.open {
+    left: 0;
+}
+
+/* AI ICON */
+.ai-icon {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 22px;
+    background: #1e293b;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 1100;
+}
 
 /* CHAT AREA */
 .chat-area {
-    width: 100%;
+    margin-left: 0;
     display: flex;
     flex-direction: column;
+    height: 100vh;
 }
 
 .top-bar {
@@ -64,6 +75,7 @@ body {
     align-items: center;
 }
 
+/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
@@ -76,6 +88,7 @@ body {
     background-color: #1e293b;
 }
 
+/* Chat bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -102,20 +115,38 @@ body {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
-/* Mic active effect */
-.mic-active {
-    background-color: red !important;
-    color: white !important;
+/* History items */
+.history-box {
+    background-color: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
 }
+.history-box.active {
+    background-color: #334155;
+}
+
+.chat-title { flex: 1; }
+.rename-input { display: none; flex: 1; }
+
 </style>
 </head>
 
 <body>
 
-<div class="main-container">
+<!-- Hover Area -->
+<div class="sidebar-hover-area"
+     onmouseenter="openSidebar()"></div>
+
+<!-- AI Icon -->
+<div class="ai-icon" onclick="toggleSidebar()">🤖</div>
 
 <!-- SIDEBAR -->
-<div id="sidebar" class="sidebar">
+<div id="sidebar" class="sidebar"
+     onmouseleave="autoCloseSidebar()">
+
     <h5>🕘 Chats</h5>
     <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
@@ -161,12 +192,8 @@ body {
 <div class="chat-area">
 
     <div class="top-bar">
-        <h5>🤖 AI Assistant</h5>
-
-        <div>
-            <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
-            <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-        </div>
+        <h5>AI Assistant</h5>
+        <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
     </div>
 
     <div class="messages" id="chatBox">
@@ -190,43 +217,50 @@ body {
     <div class="input-area">
         <form method="POST" action="/tool">
             <div class="input-group">
-
                 <input class="form-control input-box"
                        name="input"
-                       id="chatInput"
                        placeholder="Ask anything..."
                        required>
-
-                <!-- MIC BUTTON -->
-                <button type="button" id="micBtn"
-                        class="btn btn-outline-light"
-                        onclick="startListening()">🎤</button>
-
                 <button class="btn btn-ai text-white">Send</button>
-
             </div>
         </form>
     </div>
 
-</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 
-// Sidebar
+let isLocked = false;
+
+// Hover open
+function openSidebar() {
+    if (!isLocked) {
+        document.getElementById("sidebar").classList.add("open");
+    }
+}
+
+// Auto close
+function autoCloseSidebar() {
+    if (!isLocked) {
+        document.getElementById("sidebar").classList.remove("open");
+    }
+}
+
+// Click toggle (lock)
 function toggleSidebar() {
+    isLocked = !isLocked;
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// Auto scroll
+// Scroll bottom
 window.onload = () => {
     let chatBox = document.getElementById("chatBox");
     if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
 };
 
-// Inline rename
+// Rename
 function enableRename(id) {
     document.getElementById("title-" + id).style.display = "none";
     let input = document.getElementById("input-" + id);
@@ -254,42 +288,6 @@ function handleRename(event, id) {
     }
 }
 
-// 🎤 MIC FEATURE
-let recognition;
-let isListening = false;
-
-function startListening() {
-    let micBtn = document.getElementById("micBtn");
-
-    if (!('webkitSpeechRecognition' in window)) {
-        alert("Mic not supported");
-        return;
-    }
-
-    if (isListening) {
-        recognition.stop();
-        micBtn.classList.remove("mic-active");
-        isListening = false;
-        return;
-    }
-
-    recognition = new webkitSpeechRecognition();
-    recognition.lang = "en-US"; // change to "te-IN" if needed
-    recognition.start();
-
-    micBtn.classList.add("mic-active");
-    isListening = true;
-
-    recognition.onresult = function(event) {
-        document.getElementById("chatInput").value =
-            event.results[0][0].transcript;
-    };
-
-    recognition.onend = function() {
-        micBtn.classList.remove("mic-active");
-        isListening = false;
-    };
-}
 </script>
 
 </body>

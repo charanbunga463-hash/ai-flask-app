@@ -15,7 +15,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Layout */
 .main-container {
     display: flex;
     height: 100vh;
@@ -54,11 +53,15 @@ body {
     background-color: #334155;
 }
 
-.history-box a {
-    color: white;
-    text-decoration: none;
+.chat-title {
     flex: 1;
     font-size: 14px;
+    cursor: pointer;
+}
+
+.rename-input {
+    display: none;
+    flex: 1;
 }
 
 /* CHAT AREA */
@@ -68,7 +71,6 @@ body {
     flex-direction: column;
 }
 
-/* Header */
 .top-bar {
     padding: 10px 15px;
     border-bottom: 1px solid #334155;
@@ -77,21 +79,18 @@ body {
     align-items: center;
 }
 
-/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
     padding: 20px;
 }
 
-/* Input */
 .input-area {
     padding: 15px;
     border-top: 1px solid #334155;
     background-color: #1e293b;
 }
 
-/* Chat bubbles */
 .user-box {
     background-color: #1e40af;
     padding: 10px;
@@ -108,7 +107,6 @@ body {
     border: 1px solid #334155;
 }
 
-/* Inputs */
 .input-box {
     background-color: #0f172a;
     border: 1px solid #334155;
@@ -125,119 +123,115 @@ body {
 
 <div class="main-container">
 
-    <!-- SIDEBAR -->
-    <div id="sidebar" class="sidebar">
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
 
-        <h5>🕘 Chats</h5>
+    <h5>🕘 Chats</h5>
+    <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
-        <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
+    {% for conv in conversations %}
+    <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
 
-        {% for conv in conversations %}
-        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-
-            <a href="/chat/{{ conv[0] }}">
+        <!-- TITLE TEXT -->
+        <div class="chat-title" id="title-{{ conv[0] }}">
+            <a href="/chat/{{ conv[0] }}" style="color:white; text-decoration:none;">
                 {{ conv[1] }}
             </a>
-
-            <div class="dropdown">
-                <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-
-                <ul class="dropdown-menu dropdown-menu-dark">
-
-                    <!-- EDIT -->
-                    <li>
-                        <button class="dropdown-item"
-                                onclick="editChat('{{ conv[0] }}','{{ conv[1] }}')">
-                            Rename
-                        </button>
-                    </li>
-
-                    <!-- DELETE -->
-                    <li>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">
-                                Delete
-                            </button>
-                        </form>
-                    </li>
-
-                </ul>
-            </div>
-
-        </div>
-        {% endfor %}
-
-    </div>
-
-    <!-- CHAT AREA -->
-    <div class="chat-area">
-
-        <!-- TOP BAR -->
-        <div class="top-bar">
-
-            <h5>🤖 AI Assistant</h5>
-
-            <div>
-                <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
-                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-            </div>
-
         </div>
 
-        <!-- MESSAGES -->
-        <div class="messages" id="chatBox">
+        <!-- INPUT FIELD -->
+        <input type="text"
+               id="input-{{ conv[0] }}"
+               class="form-control form-control-sm rename-input"
+               value="{{ conv[1] }}"
+               onkeydown="handleRename(event, '{{ conv[0] }}')">
 
-            {% for msg in chat %}
+        <!-- MENU -->
+        <div class="dropdown ms-2">
+            <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
 
-            <div class="user-box">
-                {{ msg.user }}
-            </div>
+            <ul class="dropdown-menu dropdown-menu-dark">
 
-            {% if msg.type == "text" %}
-            <div class="response-box">
-                {{ msg.bot | safe }}
-            </div>
-            {% endif %}
+                <li>
+                    <button class="dropdown-item"
+                            onclick="enableRename('{{ conv[0] }}')">
+                        Rename
+                    </button>
+                </li>
 
-            {% if msg.type == "image" %}
-            <div class="response-box text-center">
-                <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-            </div>
-            {% endif %}
+                <li>
+                    <form method="POST" action="/delete_chat/{{ conv[0] }}">
+                        <button class="dropdown-item text-danger">Delete</button>
+                    </form>
+                </li>
 
-            {% endfor %}
-
-        </div>
-
-        <!-- INPUT -->
-        <div class="input-area">
-            <form method="POST" action="/tool">
-                <div class="input-group">
-                    <input class="form-control input-box"
-                           name="input"
-                           placeholder="Ask anything..."
-                           required>
-                    <button class="btn btn-ai text-white">Send</button>
-                </div>
-            </form>
+            </ul>
         </div>
 
     </div>
+    {% endfor %}
 
 </div>
 
-<!-- Bootstrap -->
+<!-- CHAT AREA -->
+<div class="chat-area">
+
+    <div class="top-bar">
+        <h5>🤖 AI Assistant</h5>
+
+        <div>
+            <button class="btn btn-sm btn-outline-info" onclick="toggleSidebar()">📜 History</button>
+            <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+        </div>
+    </div>
+
+    <div class="messages" id="chatBox">
+        {% for msg in chat %}
+
+        <div class="user-box">
+            {{ msg.user }}
+        </div>
+
+        {% if msg.type == "text" %}
+        <div class="response-box">
+            {{ msg.bot | safe }}
+        </div>
+        {% endif %}
+
+        {% if msg.type == "image" %}
+        <div class="response-box text-center">
+            <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
+        </div>
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+    <div class="input-area">
+        <form method="POST" action="/tool">
+            <div class="input-group">
+                <input class="form-control input-box"
+                       name="input"
+                       placeholder="Ask anything..."
+                       required>
+                <button class="btn btn-ai text-white">Send</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- JS -->
 <script>
 
-// Toggle sidebar
+// Sidebar toggle
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("open");
 }
 
-// Scroll to bottom
+// Auto scroll
 const chatBox = document.getElementById("chatBox");
 if (chatBox) {
     window.onload = () => {
@@ -245,23 +239,33 @@ if (chatBox) {
     };
 }
 
-//  Rename chat
-function editChat(id, oldTitle) {
-    let newTitle = prompt("Edit chat name:", oldTitle);
+// Enable inline rename
+function enableRename(id) {
+    document.getElementById("title-" + id).style.display = "none";
+    let input = document.getElementById("input-" + id);
+    input.style.display = "block";
+    input.focus();
+}
 
-    if (newTitle && newTitle.trim() !== "") {
-        let form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/edit_chat/" + id;
+// Handle Enter key
+function handleRename(event, id) {
+    if (event.key === "Enter") {
+        let newTitle = event.target.value.trim();
 
-        let input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "title";
-        input.value = newTitle;
+        if (newTitle !== "") {
+            let form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/edit_chat/" + id;
 
-        form.appendChild(input);
-        document.body.appendChild(form);
-        form.submit();
+            let input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "title";
+            input.value = newTitle;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 }
 

@@ -1,5 +1,6 @@
-flask
+Flask
 python-dotenv
 openai
 markdown
+PyPDF2
 gunicorn

@@ -116,6 +116,11 @@ body {
 .chat-title { flex: 1; }
 .rename-input { display: none; flex: 1; }
 
+/* Mic active */
+.mic-active {
+    background: red !important;
+    color: white !important;
+}
 </style>
 </head>
 
@@ -123,7 +128,7 @@ body {
 
 <!-- MAIN ICON -->
 <div id="mainIcon" class="main-icon"
-     onclick="toggleSidebar()"
+     onclick="openSidebar()"
      onmouseenter="hoverIcon(true)"
      onmouseleave="hoverIcon(false)">
     🤖
@@ -202,11 +207,24 @@ body {
         {% endfor %}
     </div>
 
+    <!-- INPUT + MIC -->
     <div class="input-area">
         <form method="POST" action="/tool">
             <div class="input-group">
-                <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
+
+                <input class="form-control input-box"
+                       id="chatInput"
+                       name="input"
+                       placeholder="Ask anything..."
+                       required>
+
+                <button type="button"
+                        id="micBtn"
+                        class="btn btn-outline-light"
+                        onclick="startListening()">🎤</button>
+
                 <button class="btn btn-ai text-white">Send</button>
+
             </div>
         </form>
     </div>
@@ -219,36 +237,33 @@ body {
 
 let isOpen = false;
 
-// Hover icon change
+// ICON HOVER
 function hoverIcon(enter) {
     let icon = document.getElementById("mainIcon");
-
-    if (!isOpen) {
-        icon.innerHTML = enter ? "📜" : "🤖";
-    }
+    if (!isOpen) icon.innerHTML = enter ? "📜" : "🤖";
 }
 
-// Toggle sidebar
-function toggleSidebar() {
+// OPEN SIDEBAR
+function openSidebar() {
     isOpen = true;
     document.getElementById("sidebar").classList.add("open");
     document.getElementById("mainIcon").innerHTML = "📜";
 }
 
-// Close sidebar
+// CLOSE SIDEBAR
 function closeSidebar() {
     isOpen = false;
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("mainIcon").innerHTML = "🤖";
 }
 
-// Scroll bottom
+// SCROLL
 window.onload = () => {
     let box = document.getElementById("chatBox");
     if (box) box.scrollTop = box.scrollHeight;
 };
 
-// Rename
+// RENAME
 function enableRename(id) {
     document.getElementById("title-" + id).style.display = "none";
     let input = document.getElementById("input-" + id);
@@ -274,6 +289,43 @@ function handleRename(e, id) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+// 🎤 VOICE
+let recognition;
+let isListening = false;
+
+function startListening() {
+    const btn = document.getElementById("micBtn");
+
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Voice not supported");
+        return;
+    }
+
+    if (isListening) {
+        recognition.stop();
+        btn.classList.remove("mic-active");
+        isListening = false;
+        return;
+    }
+
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.start();
+
+    btn.classList.add("mic-active");
+    isListening = true;
+
+    recognition.onresult = function(e) {
+        document.getElementById("chatInput").value =
+            e.results[0][0].transcript;
+    };
+
+    recognition.onend = function() {
+        btn.classList.remove("mic-active");
+        isListening = false;
+    };
 }
 
 </script>

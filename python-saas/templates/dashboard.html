@@ -27,7 +27,6 @@ body{
     border-radius:10px;
     cursor:pointer;
     z-index:1100;
-    transition:0.2s;
 }
 
 /* SIDEBAR */
@@ -115,9 +114,29 @@ body{
 .chat-title{ flex:1; }
 .rename-input{ display:none; flex:1; }
 
-/* FILE */
-.file-input{
-    max-width:150px;
+/* FILE MENU */
+.file-menu{
+    position:absolute;
+    bottom:45px;
+    left:0;
+    background:#1e293b;
+    border:1px solid #334155;
+    border-radius:10px;
+    padding:5px;
+    display:flex;
+    flex-direction:column;
+    z-index:999;
+}
+.file-menu button{
+    background:none;
+    border:none;
+    color:white;
+    padding:8px 12px;
+    text-align:left;
+    cursor:pointer;
+}
+.file-menu button:hover{
+    background:#334155;
 }
 
 /* MIC */
@@ -145,7 +164,6 @@ body{
 
     {% for conv in conversations %}
     <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-
         <div class="chat-title" id="title-{{ conv[0] }}">
             <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;">
                 {{ conv[1] }}
@@ -161,10 +179,8 @@ body{
         <div class="dropdown ms-2">
             <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
             <ul class="dropdown-menu dropdown-menu-dark">
-                <li>
-                    <button class="dropdown-item"
-                        onclick="enableRename('{{ conv[0] }}')">Rename</button>
-                </li>
+                <li><button class="dropdown-item"
+                    onclick="enableRename('{{ conv[0] }}')">Rename</button></li>
                 <li>
                     <form method="POST" action="/delete_chat/{{ conv[0] }}">
                         <button class="dropdown-item text-danger">Delete</button>
@@ -172,7 +188,6 @@ body{
                 </li>
             </ul>
         </div>
-
     </div>
     {% endfor %}
 </div>
@@ -204,23 +219,29 @@ body{
     <!-- INPUT -->
     <div class="input-area">
         <form method="POST" action="/tool" enctype="multipart/form-data">
-            <div class="input-group">
+            <div class="input-group align-items-center">
 
+                <!-- ➕ BUTTON -->
+                <div class="position-relative">
+                    <button type="button" class="btn btn-outline-light" onclick="toggleMenu()">➕</button>
+
+                    <div id="fileMenu" class="file-menu d-none">
+                        <button type="button" onclick="openFile()">📄 Upload File</button>
+                        <button type="button" onclick="openImage()">🖼 Upload Image</button>
+                    </div>
+                </div>
+
+                <!-- HIDDEN INPUT -->
+                <input type="file" id="fileInput" name="file" class="d-none">
+
+                <!-- TEXT -->
                 <input class="form-control input-box"
                        id="chatInput"
                        name="input"
                        placeholder="Ask anything...">
 
-                <!-- FILE -->
-                <input type="file"
-                       name="file"
-                       class="form-control file-input"
-                       accept=".pdf,image/*">
-
                 <!-- MIC -->
-                <button type="button"
-                        id="micBtn"
-                        class="btn btn-outline-light">🎤</button>
+                <button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
 
                 <button class="btn btn-ai text-white">Send</button>
 
@@ -234,41 +255,75 @@ body{
 
 <script>
 
-// ===== ELEMENTS =====
-const mainIcon = document.getElementById("mainIcon");
-const sidebar = document.getElementById("sidebar");
-const closeBtn = document.getElementById("closeBtn");
+// SIDEBAR
+const mainIcon=document.getElementById("mainIcon");
+const sidebar=document.getElementById("sidebar");
+const closeBtn=document.getElementById("closeBtn");
+let isOpen=false;
 
-let isOpen = false;
-
-// ===== ICON BEHAVIOR =====
-mainIcon.addEventListener("mouseenter", () => {
-    if (!isOpen) mainIcon.innerHTML = "📜";
-});
-
-mainIcon.addEventListener("mouseleave", () => {
-    if (!isOpen) mainIcon.innerHTML = "🤖";
-});
-
-mainIcon.addEventListener("click", () => {
-    isOpen = true;
+mainIcon.onclick=()=>{
+    isOpen=true;
     sidebar.classList.add("open");
-    mainIcon.innerHTML = "📜";
-});
-
-closeBtn.addEventListener("click", () => {
-    isOpen = false;
+};
+closeBtn.onclick=()=>{
+    isOpen=false;
     sidebar.classList.remove("open");
-    mainIcon.innerHTML = "🤖";
-});
-
-// ===== SCROLL =====
-window.onload = () => {
-    const box = document.getElementById("chatBox");
-    if (box) box.scrollTop = box.scrollHeight;
 };
 
-// ===== RENAME =====
+// SCROLL
+window.onload=()=>{
+    let box=document.getElementById("chatBox");
+    if(box) box.scrollTop=box.scrollHeight;
+};
+
+// FILE MENU
+function toggleMenu(){
+    document.getElementById("fileMenu").classList.toggle("d-none");
+}
+function openFile(){
+    let f=document.getElementById("fileInput");
+    f.accept=".pdf";
+    f.click();
+}
+function openImage(){
+    let f=document.getElementById("fileInput");
+    f.accept="image/*";
+    f.click();
+}
+
+// VOICE
+let recognition,isListening=false;
+const micBtn=document.getElementById("micBtn");
+
+micBtn.onclick=()=>{
+    if(!('webkitSpeechRecognition' in window)){
+        alert("Voice not supported");
+        return;
+    }
+    if(isListening){
+        recognition.stop();
+        micBtn.classList.remove("mic-active");
+        isListening=false;
+        return;
+    }
+    recognition=new webkitSpeechRecognition();
+    recognition.lang="en-US";
+    recognition.start();
+
+    micBtn.classList.add("mic-active");
+    isListening=true;
+
+    recognition.onresult=e=>{
+        chatInput.value=e.results[0][0].transcript;
+    };
+
+    recognition.onend=()=>{
+        micBtn.classList.remove("mic-active");
+        isListening=false;
+    };
+};
+
+// RENAME
 function enableRename(id){
     document.getElementById("title-"+id).style.display="none";
     let input=document.getElementById("input-"+id);
@@ -295,43 +350,6 @@ function handleRename(e,id){
         form.submit();
     }
 }
-
-// ===== VOICE =====
-let recognition;
-let isListening = false;
-const micBtn = document.getElementById("micBtn");
-
-micBtn.addEventListener("click", () => {
-
-    if (!('webkitSpeechRecognition' in window)) {
-        alert("Voice not supported in this browser");
-        return;
-    }
-
-    if (isListening) {
-        recognition.stop();
-        micBtn.classList.remove("mic-active");
-        isListening = false;
-        return;
-    }
-
-    recognition = new webkitSpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.start();
-
-    micBtn.classList.add("mic-active");
-    isListening = true;
-
-    recognition.onresult = (e) => {
-        document.getElementById("chatInput").value =
-            e.results[0][0].transcript;
-    };
-
-    recognition.onend = () => {
-        micBtn.classList.remove("mic-active");
-        isListening = false;
-    };
-});
 
 </script>
 

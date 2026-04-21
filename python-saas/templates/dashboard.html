@@ -16,6 +16,19 @@ body {
     margin: 0;
 }
 
+/* ICON */
+.main-icon {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 22px;
+    background: #1e293b;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 1100;
+}
+
 /* SIDEBAR */
 .sidebar {
     width: 280px;
@@ -30,38 +43,10 @@ body {
     padding: 15px;
     overflow-y: auto;
 }
-
-/* Show on hover */
-.sidebar-hover-area {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 50px;
-    height: 100%;
-    z-index: 999;
-}
-
-/* Sidebar open */
-.sidebar.open {
-    left: 0;
-}
-
-/* AI ICON */
-.ai-icon {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    font-size: 22px;
-    background: #1e293b;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    z-index: 1100;
-}
+.sidebar.open { left: 0; }
 
 /* CHAT AREA */
 .chat-area {
-    margin-left: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -72,10 +57,8 @@ body {
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
-    align-items: center;
 }
 
-/* Messages */
 .messages {
     flex: 1;
     overflow-y: auto;
@@ -115,7 +98,7 @@ body {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
-/* History items */
+/* HISTORY */
 .history-box {
     background-color: #1e293b;
     padding: 10px;
@@ -136,18 +119,23 @@ body {
 
 <body>
 
-<!-- Hover Area -->
-<div class="sidebar-hover-area"
-     onmouseenter="openSidebar()"></div>
-
-<!-- AI Icon -->
-<div class="ai-icon" onclick="toggleSidebar()">🤖</div>
+<!-- MAIN ICON -->
+<div id="mainIcon" class="main-icon"
+     onclick="toggleSidebar()"
+     onmouseenter="hoverIcon(true)"
+     onmouseleave="hoverIcon(false)">
+    🤖
+</div>
 
 <!-- SIDEBAR -->
-<div id="sidebar" class="sidebar"
-     onmouseleave="autoCloseSidebar()">
+<div id="sidebar" class="sidebar">
 
-    <h5>🕘 Chats</h5>
+    <!-- TOP CLOSE BUTTON -->
+    <div class="d-flex justify-content-between mb-3">
+        <h5>🕘 Chats</h5>
+        <button class="btn btn-sm btn-outline-light" onclick="toggleSidebar()">📜</button>
+    </div>
+
     <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
 
     {% for conv in conversations %}
@@ -186,9 +174,10 @@ body {
 
     </div>
     {% endfor %}
+
 </div>
 
-<!-- CHAT AREA -->
+<!-- CHAT -->
 <div class="chat-area">
 
     <div class="top-bar">
@@ -198,7 +187,6 @@ body {
 
     <div class="messages" id="chatBox">
         {% for msg in chat %}
-
         <div class="user-box">{{ msg.user }}</div>
 
         {% if msg.type == "text" %}
@@ -210,17 +198,13 @@ body {
             <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
         </div>
         {% endif %}
-
         {% endfor %}
     </div>
 
     <div class="input-area">
         <form method="POST" action="/tool">
             <div class="input-group">
-                <input class="form-control input-box"
-                       name="input"
-                       placeholder="Ask anything..."
-                       required>
+                <input class="form-control input-box" name="input" placeholder="Ask anything..." required>
                 <button class="btn btn-ai text-white">Send</button>
             </div>
         </form>
@@ -232,32 +216,27 @@ body {
 
 <script>
 
-let isLocked = false;
+let isOpen = false;
 
-// Hover open
-function openSidebar() {
-    if (!isLocked) {
-        document.getElementById("sidebar").classList.add("open");
-    }
-}
-
-// Auto close
-function autoCloseSidebar() {
-    if (!isLocked) {
-        document.getElementById("sidebar").classList.remove("open");
-    }
-}
-
-// Click toggle (lock)
+// Toggle sidebar
 function toggleSidebar() {
-    isLocked = !isLocked;
+    isOpen = !isOpen;
     document.getElementById("sidebar").classList.toggle("open");
+}
+
+// Icon hover change
+function hoverIcon(enter) {
+    let icon = document.getElementById("mainIcon");
+
+    if (!isOpen) {
+        icon.innerHTML = enter ? "📜" : "🤖";
+    }
 }
 
 // Scroll bottom
 window.onload = () => {
-    let chatBox = document.getElementById("chatBox");
-    if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+    let box = document.getElementById("chatBox");
+    if (box) box.scrollTop = box.scrollHeight;
 };
 
 // Rename
@@ -268,9 +247,9 @@ function enableRename(id) {
     input.focus();
 }
 
-function handleRename(event, id) {
-    if (event.key === "Enter") {
-        let val = event.target.value.trim();
+function handleRename(e, id) {
+    if (e.key === "Enter") {
+        let val = e.target.value.trim();
         if (!val) return;
 
         let form = document.createElement("form");

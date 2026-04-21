@@ -112,6 +112,7 @@ body {
 .chat-title { flex: 1; }
 .rename-input { display: none; flex: 1; }
 
+/* MIC */
 .mic-active {
     background: red !important;
     color: white !important;
@@ -121,7 +122,7 @@ body {
 
 <body>
 
-<!-- ICON -->
+<!-- MAIN ICON -->
 <div id="mainIcon" class="main-icon"
      onclick="openSidebar()"
      onmouseenter="hoverIcon(true)"
@@ -195,16 +196,23 @@ body {
         {% endfor %}
     </div>
 
-    <!-- INPUT -->
+    <!-- INPUT + FILE + MIC -->
     <div class="input-area">
-        <form onsubmit="sendMessage(event)">
+        <form method="POST" action="/tool" enctype="multipart/form-data">
             <div class="input-group">
 
                 <input class="form-control input-box"
                        id="chatInput"
-                       placeholder="Ask anything..."
-                       required>
+                       name="input"
+                       placeholder="Ask anything...">
 
+                <!-- 📎 FILE -->
+                <input type="file"
+                       name="file"
+                       class="form-control"
+                       accept=".pdf,image/*">
+
+                <!-- 🎤 MIC -->
                 <button type="button"
                         id="micBtn"
                         class="btn btn-outline-light"
@@ -222,43 +230,72 @@ body {
 
 <script>
 
-// Sidebar logic
+// Sidebar
 let isOpen = false;
-function hoverIcon(e){ if(!isOpen) mainIcon.innerHTML = e?"📜":"🤖"; }
-function openSidebar(){ isOpen=true; sidebar.classList.add("open"); mainIcon.innerHTML="📜"; }
-function closeSidebar(){ isOpen=false; sidebar.classList.remove("open"); mainIcon.innerHTML="🤖"; }
+function hoverIcon(e){
+    if(!isOpen) mainIcon.innerHTML = e ? "📜" : "🤖";
+}
+function openSidebar(){
+    isOpen = true;
+    sidebar.classList.add("open");
+    mainIcon.innerHTML = "📜";
+}
+function closeSidebar(){
+    isOpen = false;
+    sidebar.classList.remove("open");
+    mainIcon.innerHTML = "🤖";
+}
 
-// Auto scroll
-window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
+// Scroll
+window.onload = () => {
+    let box = document.getElementById("chatBox");
+    if (box) box.scrollTop = box.scrollHeight;
+};
 
 // Rename
 function enableRename(id){
-    title = document.getElementById("title-"+id);
-    input = document.getElementById("input-"+id);
-    title.style.display="none";
+    document.getElementById("title-"+id).style.display="none";
+    let input = document.getElementById("input-"+id);
     input.style.display="block";
     input.focus();
 }
+
 function handleRename(e,id){
     if(e.key==="Enter"){
-        let val=e.target.value.trim();
+        let val = e.target.value.trim();
         if(!val) return;
-        let f=document.createElement("form");
-        f.method="POST"; f.action="/edit_chat/"+id;
-        let i=document.createElement("input");
-        i.type="hidden"; i.name="title"; i.value=val;
-        f.appendChild(i); document.body.appendChild(f); f.submit();
+
+        let form = document.createElement("form");
+        form.method="POST";
+        form.action="/edit_chat/"+id;
+
+        let inp = document.createElement("input");
+        inp.type="hidden";
+        inp.name="title";
+        inp.value=val;
+
+        form.appendChild(inp);
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
 // 🎤 Voice
 let recognition, isListening=false;
+
 function startListening(){
-    const btn = micBtn;
-    if(!('webkitSpeechRecognition'in window)){ alert("No voice"); return; }
+    const btn = document.getElementById("micBtn");
+
+    if(!('webkitSpeechRecognition' in window)){
+        alert("Voice not supported");
+        return;
+    }
 
     if(isListening){
-        recognition.stop(); btn.classList.remove("mic-active"); isListening=false; return;
+        recognition.stop();
+        btn.classList.remove("mic-active");
+        isListening=false;
+        return;
     }
 
     recognition = new webkitSpeechRecognition();
@@ -268,42 +305,17 @@ function startListening(){
     btn.classList.add("mic-active");
     isListening=true;
 
-    recognition.onresult = e => chatInput.value = e.results[0][0].transcript;
-    recognition.onend = () => { btn.classList.remove("mic-active"); isListening=false; };
+    recognition.onresult = e => {
+        document.getElementById("chatInput").value =
+            e.results[0][0].transcript;
+    };
+
+    recognition.onend = () => {
+        btn.classList.remove("mic-active");
+        isListening=false;
+    };
 }
 
-// 🔥 STREAMING
-async function sendMessage(e){
-    e.preventDefault();
-
-    let input = chatInput.value.trim();
-    if(!input) return;
-
-    chatBox.innerHTML += `<div class="user-box">${input}</div>`;
-
-    let botDiv = document.createElement("div");
-    botDiv.className="response-box";
-    chatBox.appendChild(botDiv);
-
-    chatInput.value="";
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    const res = await fetch("/stream",{
-        method:"POST",
-        body:new URLSearchParams({input})
-    });
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-
-    while(true){
-        const {done,value} = await reader.read();
-        if(done) break;
-
-        botDiv.innerHTML += decoder.decode(value);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-}
 </script>
 
 </body>

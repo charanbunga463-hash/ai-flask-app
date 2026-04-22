@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import markdown
 from openai import OpenAI
 from PyPDF2 import PdfReader
+import bcrypt   # ✅ NEW
 
 # ---------- ENV ----------
 load_dotenv()
@@ -219,7 +220,7 @@ def search():
 
     return {"results": results}
 
-# ---------- TOOL (AI CHAT + IMAGE + PDF) ----------
+# ---------- TOOL ----------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -252,7 +253,6 @@ def tool():
 
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    # Image generation
     if user_input and any(k in user_input.lower() for k in ["image","draw","photo","picture"]) and not file:
         img = generate_image(user_input)
 
@@ -265,7 +265,6 @@ def tool():
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # Text AI
     result = query_ai(final_prompt)
     formatted = markdown.markdown(result)
 
@@ -327,7 +326,7 @@ def get_stories():
         "created_at": str(r[4])
     } for r in rows])
 
-# ✅ VIEW TRACKING (NEW)
+# ---------- STORY VIEW TRACK ----------
 @app.route("/view_story/<int:story_id>")
 def view_story(story_id):
     if "user" not in session:
@@ -346,7 +345,7 @@ def view_story(story_id):
 
     return jsonify({"status": "ok"})
 
-# ---------- AUTH ----------
+# ---------- AUTH (SECURE) ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -360,13 +359,26 @@ def login():
 
         c.execute("SELECT password FROM users WHERE username=%s", (user,))
         data = c.fetchone()
-        conn.close()
 
-        if data and pwd == data[0]:
-            session["user"] = user
-            return redirect("/")
-        else:
-            error = "Invalid credentials"
+        if data:
+            stored = data[0]
+
+            if stored.startswith("$2b$"):  # hashed
+                valid = bcrypt.checkpw(pwd.encode(), stored.encode())
+            else:  # old plain password
+                valid = (pwd == stored)
+                if valid:
+                    new_hash = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
+                    c.execute("UPDATE users SET password=%s WHERE username=%s", (new_hash, user))
+                    conn.commit()
+
+            if valid:
+                session["user"] = user
+                conn.close()
+                return redirect("/")
+
+        conn.close()
+        error = "Invalid credentials"
 
     return render_template("login.html", error=error)
 
@@ -382,7 +394,11 @@ def register():
             conn = get_db()
             c = conn.cursor()
 
-            c.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (user, pwd))
+            hashed_pwd = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
+
+            c.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
+                      (user, hashed_pwd))
+
             conn.commit()
             conn.close()
 

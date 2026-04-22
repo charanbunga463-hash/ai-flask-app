@@ -16,12 +16,12 @@ body{
 
 /* SIDEBAR */
 .sidebar{
-    width:280px;
+    width:300px;
     background:#0f172a;
     border-right:1px solid #334155;
     height:100vh;
     position:fixed;
-    left:-280px;
+    left:-300px;
     transition:.3s;
     padding:15px;
     display:flex;
@@ -39,6 +39,7 @@ body{
     padding:8px 12px;
     border-radius:10px;
     cursor:pointer;
+    z-index:1000;
 }
 
 /* CHAT */
@@ -70,14 +71,37 @@ body{
     border:1px solid #334155;
 }
 
-/* SEARCH */
-.search-box{ margin:10px 0; }
+/* SEARCH PANEL (ChatGPT style) */
+.search-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+}
+
+.search-counter{
+    font-size:12px;
+    color:#94a3b8;
+}
+
+.nav-btn{
+    background:#1e293b;
+    border:none;
+    color:white;
+    padding:4px 8px;
+    border-radius:6px;
+}
+
+/* SEARCH RESULTS */
+.search-box{
+    margin-top:10px;
+}
 
 .history-box{
     background:#1e293b;
     padding:10px;
     border-radius:10px;
-    margin-bottom:10px;
+    margin-bottom:8px;
     cursor:pointer;
 }
 .history-box:hover{ background:#334155; }
@@ -111,7 +135,6 @@ body{
     display:none;
 }
 .file-menu button{
-    display:block;
     width:100%;
     background:none;
     border:none;
@@ -119,9 +142,6 @@ body{
     padding:8px;
 }
 
-.mic-active{
-    background:red !important;
-}
 </style>
 </head>
 
@@ -132,16 +152,23 @@ body{
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
 
-    <div class="d-flex justify-content-between">
-        <h5>Chats</h5>
-        <button class="btn btn-sm btn-outline-light" onclick="sidebar.classList.remove('open')">✖</button>
-    </div>
+    <h5>Chats</h5>
 
     <div class="sidebar-content">
 
-        <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
+        <a href="/new_chat" class="btn btn-primary w-100">+ New Chat</a>
 
-        <input id="searchBox" class="form-control search-box" placeholder="Search messages...">
+        <!-- SEARCH -->
+        <input id="searchBox" class="form-control search-box mt-2" placeholder="Search messages...">
+
+        <!-- CHATGPT STYLE HEADER -->
+        <div class="search-header">
+            <button class="nav-btn" onclick="prevMatch()">⬆</button>
+
+            <span class="search-counter" id="counter">0 / 0</span>
+
+            <button class="nav-btn" onclick="nextMatch()">⬇</button>
+        </div>
 
         <div id="searchResults"></div>
 
@@ -167,30 +194,32 @@ body{
 <div class="chat-area">
 
 <div id="chatBox" class="messages">
+
 {% for msg in chat %}
 
-    <div class="user-box message"
-         id="msg-{{ msg.id }}"
-         data-text="{{ msg.user | e }}">
-        {{ msg.user }}
-    </div>
+<div class="user-box message"
+     id="msg-{{ msg.id }}"
+     data-text="{{ msg.user | e }}">
+    {{ msg.user }}
+</div>
 
-    {% if msg.type == "text" %}
-    <div class="response-box message"
-         id="msg-{{ msg.id }}"
-         data-text="{{ msg.bot | striptags | e }}">
-        {{ msg.bot | safe }}
-    </div>
-    {% endif %}
+{% if msg.type == "text" %}
+<div class="response-box message"
+     id="msg-{{ msg.id }}"
+     data-text="{{ msg.bot | striptags | e }}">
+    {{ msg.bot | safe }}
+</div>
+{% endif %}
 
-    {% if msg.type == "image" %}
-    <div class="response-box text-center"
-         id="msg-{{ msg.id }}">
-        <img src="{{ msg.image }}" style="max-width:100%;">
-    </div>
-    {% endif %}
+{% if msg.type == "image" %}
+<div class="response-box text-center"
+     id="msg-{{ msg.id }}">
+    <img src="{{ msg.image }}" style="max-width:100%;">
+</div>
+{% endif %}
 
 {% endfor %}
+
 </div>
 
 <div class="input-area">
@@ -203,7 +232,6 @@ body{
 
 <input class="form-control" id="chatInput" name="input" placeholder="Ask anything...">
 
-<button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
 <button class="btn btn-primary">Send</button>
 
 </div>
@@ -220,92 +248,145 @@ body{
 
 <script>
 
-// SIDEBAR
 const sidebar=document.getElementById("sidebar");
 document.getElementById("mainIcon").onclick=()=>sidebar.classList.add("open");
 
-// SEARCH
-searchBox.oninput=async ()=>{
-    let q=searchBox.value.trim();
+/* =========================
+   🔍 SEARCH ENGINE CORE
+========================= */
 
-    if(q.length<2){
+let matches = [];
+let current = -1;
+
+searchBox.oninput = async () => {
+    let q = searchBox.value.trim();
+
+    if(q.length < 2){
         searchResults.innerHTML="";
         chatHistory.style.display="block";
+        matches=[];
+        updateCounter();
         return;
     }
 
     chatHistory.style.display="none";
 
-    let res=await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data=await res.json();
+    // instant highlight in current chat
+    liveHighlight(q);
 
+    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data = await res.json();
+
+    matches = data.results || [];
+    current = matches.length ? 0 : -1;
+
+    renderResults(q);
+    updateCounter();
+};
+
+/* =========================
+   📌 RENDER RESULTS
+========================= */
+
+function renderResults(q){
     let html="";
 
-    data.results.forEach(r=>{
-        let text=r.snippet.replace(new RegExp(`(${q})`,"gi"),
-        `<span class="highlight">$1</span>`);
+    matches.forEach((r,i)=>{
+        let text = r.snippet.replace(
+            new RegExp(`(${q})`,"gi"),
+            `<span class="highlight">$1</span>`
+        );
 
-        html+=`
-        <div class="history-box" onclick="openChat(${r.conv_id},${r.msg_id})">
+        html += `
+        <div class="history-box" onclick="openMatch(${i})">
             ${text}...
         </div>`;
     });
 
-    searchResults.innerHTML=html;
-};
-
-function openChat(c,m){
-    let q=encodeURIComponent(searchBox.value);
-    location.href=`/chat/${c}?msg=${m}&q=${q}`;
+    searchResults.innerHTML = html;
 }
 
-// JUMP + HIGHLIGHT
-window.onload=()=>{
-    let p=new URLSearchParams(location.search);
-    let msg=p.get("msg");
-    let q=p.get("q");
+/* =========================
+   🎯 OPEN MATCH
+========================= */
 
-    let box=document.getElementById("chatBox");
+function openMatch(index){
+    let r = matches[index];
+    if(!r) return;
+
+    let q = encodeURIComponent(searchBox.value);
+
+    location.href = `/chat/${r.conv_id}?msg=${r.msg_id}&q=${q}`;
+}
+
+/* =========================
+   ⬆⬇ NAVIGATION
+========================= */
+
+function nextMatch(){
+    if(matches.length === 0) return;
+
+    current = (current + 1) % matches.length;
+    openMatch(current);
+}
+
+function prevMatch(){
+    if(matches.length === 0) return;
+
+    current = (current - 1 + matches.length) % matches.length;
+    openMatch(current);
+}
+
+/* =========================
+   🔢 COUNTER
+========================= */
+
+function updateCounter(){
+    document.getElementById("counter").innerText =
+        matches.length ? `${current+1} / ${matches.length}` : "0 / 0";
+}
+
+/* =========================
+   ⚡ LIVE HIGHLIGHT
+========================= */
+
+function liveHighlight(q){
+    document.querySelectorAll(".message").forEach(el=>{
+        let text = el.dataset.text || "";
+        el.innerHTML = text;
+
+        if(q.length < 2) return;
+
+        let regex = new RegExp(`(${q})`, "gi");
+        el.innerHTML = el.innerHTML.replace(regex,
+            `<span class="highlight">$1</span>`);
+    });
+}
+
+/* =========================
+   🎯 JUMP ON LOAD
+========================= */
+
+window.onload = () => {
+    let p = new URLSearchParams(location.search);
+    let msg = p.get("msg");
+    let q = p.get("q");
 
     if(msg){
-        let el=document.getElementById("msg-"+msg);
+        let el = document.getElementById("msg-"+msg);
+
         if(el){
             el.scrollIntoView({behavior:"smooth",block:"center"});
-
-            highlight(el,q);
-
+            liveHighlight(q);
             el.style.border="2px solid yellow";
-            setTimeout(()=>el.style.border="",3000);
+            setTimeout(()=>el.style.border="",2000);
         }
-    }else{
-        box.scrollTop=box.scrollHeight;
     }
 };
 
-function highlight(el,q){
-    if(!q) return;
-
-    let regex=new RegExp(`(${q})`,"gi");
-
-    function walk(node){
-        if(node.nodeType===3){
-            if(regex.test(node.nodeValue)){
-                let span=document.createElement("span");
-                span.innerHTML=node.nodeValue.replace(regex,
-                    `<span class="highlight">$1</span>`);
-                node.replaceWith(span);
-            }
-        }else{
-            node.childNodes.forEach(walk);
-        }
-    }
-
-    walk(el);
-}
-
-// FILE
+/* FILE MENU */
 function toggleMenu(){
-    fileMenu.style.display=fileMenu.style.display==="block"?"none":"block";
+    fileMenu.style.display = fileMenu.style.display==="block"?"none":"block";
 }
 function openFile(){
     fileInput.accept=".pdf";
@@ -315,32 +396,6 @@ function openImage(){
     fileInput.accept="image/*";
     fileInput.click();
 }
-
-// VOICE
-let recognition,isListening=false;
-micBtn.onclick=()=>{
-    if(!('webkitSpeechRecognition' in window)) return alert("Not supported");
-
-    if(isListening){
-        recognition.stop();
-        return;
-    }
-
-    recognition=new webkitSpeechRecognition();
-    recognition.start();
-
-    micBtn.classList.add("mic-active");
-    isListening=true;
-
-    recognition.onresult=e=>{
-        chatInput.value=e.results[0][0].transcript;
-    };
-
-    recognition.onend=()=>{
-        micBtn.classList.remove("mic-active");
-        isListening=false;
-    };
-};
 
 </script>
 

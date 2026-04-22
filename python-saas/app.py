@@ -193,22 +193,22 @@ def search():
     results = []
 
     for r in rows:
-        user_text = r["user_msg"] or ""
-        bot_text = r["bot_msg"] or ""
+        user_msg = r["user_msg"] or ""
+        bot_msg = r["bot_msg"] or ""
 
-        full_text = user_text + " " + bot_text
+        full_text = user_msg + " " + bot_msg
 
+        # find match position for snippet
         idx = full_text.lower().find(q.lower())
 
-        # fallback if not found (rare case)
         if idx == -1:
             idx = 0
 
-        snippet = full_text[max(0, idx-40): idx+40]
+        snippet = full_text[max(0, idx - 40): idx + 40]
 
         results.append({
             "conv_id": r["conversation_id"],
-            "msg_id": r["id"],   # ⭐ REQUIRED for jump
+            "msg_id": r["id"],     # ⭐ REQUIRED for jump
             "snippet": snippet
         })
 

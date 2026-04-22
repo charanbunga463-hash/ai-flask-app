@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>AI Tool</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,19 +14,6 @@ body{
     font-family:'Segoe UI',sans-serif;
 }
 
-/* ICON */
-.main-icon{
-    position:fixed;
-    top:10px;
-    left:10px;
-    font-size:22px;
-    background:#1e293b;
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    z-index:1100;
-}
-
 /* SIDEBAR */
 .sidebar{
     width:280px;
@@ -36,18 +22,23 @@ body{
     height:100vh;
     position:fixed;
     left:-280px;
-    top:0;
     transition:.3s;
-    z-index:1000;
     padding:15px;
     display:flex;
     flex-direction:column;
 }
 .sidebar.open{ left:0; }
 
-.sidebar-content{
-    flex:1;
-    overflow-y:auto;
+.sidebar-content{ flex:1; overflow-y:auto; }
+
+.main-icon{
+    position:fixed;
+    top:10px;
+    left:10px;
+    background:#1e293b;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
 }
 
 /* CHAT */
@@ -63,14 +54,6 @@ body{
     padding:20px;
 }
 
-/* INPUT */
-.input-area{
-    padding:15px;
-    border-top:1px solid #334155;
-    background:#1e293b;
-}
-
-/* BUBBLES */
 .user-box{
     background:#1e40af;
     padding:10px;
@@ -78,6 +61,7 @@ body{
     text-align:right;
     margin-top:10px;
 }
+
 .response-box{
     background:#020617;
     padding:15px;
@@ -86,7 +70,9 @@ body{
     border:1px solid #334155;
 }
 
-/* HISTORY / SEARCH RESULTS */
+/* SEARCH */
+.search-box{ margin:10px 0; }
+
 .history-box{
     background:#1e293b;
     padding:10px;
@@ -94,13 +80,13 @@ body{
     margin-bottom:10px;
     cursor:pointer;
 }
-.history-box:hover{
-    background:#334155;
-}
+.history-box:hover{ background:#334155; }
 
-/* SEARCH */
-.search-box{
-    margin:10px 0;
+.highlight{
+    background:yellow;
+    color:black;
+    padding:2px;
+    border-radius:3px;
 }
 
 /* FOOTER */
@@ -109,39 +95,32 @@ body{
     padding-top:10px;
 }
 
-/* HIGHLIGHT */
-.highlight{
-    background:yellow;
-    color:black;
-    padding:2px;
-    border-radius:3px;
+/* INPUT */
+.input-area{
+    padding:15px;
+    border-top:1px solid #334155;
+    background:#1e293b;
 }
 
-/* FILE MENU */
 .file-menu{
     position:absolute;
     bottom:45px;
-    left:0;
     background:#1e293b;
     border:1px solid #334155;
     border-radius:10px;
-    padding:5px;
-    display:flex;
-    flex-direction:column;
+    display:none;
 }
 .file-menu button{
+    display:block;
+    width:100%;
     background:none;
     border:none;
     color:white;
     padding:8px;
 }
-.file-menu button:hover{
-    background:#334155;
-}
 
 .mic-active{
     background:red !important;
-    color:white !important;
 }
 </style>
 </head>
@@ -155,20 +134,17 @@ body{
 
     <div class="d-flex justify-content-between">
         <h5>Chats</h5>
-        <button class="btn btn-sm btn-outline-light" id="closeBtn">✖</button>
+        <button class="btn btn-sm btn-outline-light" onclick="sidebar.classList.remove('open')">✖</button>
     </div>
 
     <div class="sidebar-content">
 
-        <a href="/new_chat" class="btn btn-primary w-100 mt-2 mb-2">+ New Chat</a>
+        <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
 
-        <!-- SEARCH -->
-        <input type="text" id="searchBox" class="form-control search-box" placeholder="Search messages...">
+        <input id="searchBox" class="form-control search-box" placeholder="Search messages...">
 
-        <!-- SEARCH RESULTS -->
         <div id="searchResults"></div>
 
-        <!-- NORMAL HISTORY -->
         <div id="chatHistory">
         {% for conv in conversations %}
             <div class="history-box">
@@ -190,146 +166,179 @@ body{
 <!-- CHAT -->
 <div class="chat-area">
 
-    <div class="messages" id="chatBox">
-        {% for msg in chat %}
-            <div class="user-box">{{ msg.user }}</div>
+<div id="chatBox" class="messages">
+{% for msg in chat %}
 
-            {% if msg.type == "text" %}
-                <div class="response-box">{{ msg.bot | safe }}</div>
-            {% endif %}
-
-            {% if msg.type == "image" %}
-                <div class="response-box text-center">
-                    <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-                </div>
-            {% endif %}
-        {% endfor %}
+    <div class="user-box message"
+         id="msg-{{ msg.id }}"
+         data-text="{{ msg.user | e }}">
+        {{ msg.user }}
     </div>
 
-    <div class="input-area">
-        <form method="POST" action="/tool" enctype="multipart/form-data">
-            <div class="input-group">
-
-                <button type="button" class="btn btn-outline-light" onclick="toggleMenu()">➕</button>
-
-                <input type="file" id="fileInput" name="file" class="d-none">
-
-                <input class="form-control"
-                       id="chatInput"
-                       name="input"
-                       placeholder="Ask anything...">
-
-                <button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
-                <button class="btn btn-primary">Send</button>
-
-            </div>
-        </form>
-
-        <div id="fileMenu" class="file-menu d-none">
-            <button onclick="openFile()">📄 Upload File</button>
-            <button onclick="openImage()">🖼 Upload Image</button>
-        </div>
+    {% if msg.type == "text" %}
+    <div class="response-box message"
+         id="msg-{{ msg.id }}"
+         data-text="{{ msg.bot | striptags | e }}">
+        {{ msg.bot | safe }}
     </div>
+    {% endif %}
+
+    {% if msg.type == "image" %}
+    <div class="response-box text-center"
+         id="msg-{{ msg.id }}">
+        <img src="{{ msg.image }}" style="max-width:100%;">
+    </div>
+    {% endif %}
+
+{% endfor %}
+</div>
+
+<div class="input-area">
+<form method="POST" action="/tool" enctype="multipart/form-data">
+<div class="input-group">
+
+<button type="button" onclick="toggleMenu()" class="btn btn-outline-light">➕</button>
+
+<input type="file" id="fileInput" name="file" class="d-none">
+
+<input class="form-control" id="chatInput" name="input" placeholder="Ask anything...">
+
+<button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
+<button class="btn btn-primary">Send</button>
+
+</div>
+</form>
+
+<div id="fileMenu" class="file-menu">
+<button onclick="openFile()">📄 Upload File</button>
+<button onclick="openImage()">🖼 Upload Image</button>
+</div>
+
+</div>
 
 </div>
 
 <script>
 
 // SIDEBAR
-const sidebar = document.getElementById("sidebar");
-document.getElementById("mainIcon").onclick = () => sidebar.classList.add("open");
-document.getElementById("closeBtn").onclick = () => sidebar.classList.remove("open");
+const sidebar=document.getElementById("sidebar");
+document.getElementById("mainIcon").onclick=()=>sidebar.classList.add("open");
 
-// AUTO SCROLL
-window.onload = () => {
-    let box = document.getElementById("chatBox");
-    if(box) box.scrollTop = box.scrollHeight;
-};
+// SEARCH
+searchBox.oninput=async ()=>{
+    let q=searchBox.value.trim();
 
-// 🔍 REAL SEARCH
-const searchBox = document.getElementById("searchBox");
-const resultsDiv = document.getElementById("searchResults");
-const historyDiv = document.getElementById("chatHistory");
-
-searchBox.addEventListener("input", async function(){
-    let q = this.value.trim();
-
-    if(q.length < 2){
-        resultsDiv.innerHTML = "";
-        historyDiv.style.display = "block";
+    if(q.length<2){
+        searchResults.innerHTML="";
+        chatHistory.style.display="block";
         return;
     }
 
-    historyDiv.style.display = "none";
+    chatHistory.style.display="none";
 
-    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data = await res.json();
+    let res=await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data=await res.json();
 
-    let html = "";
+    let html="";
 
-    data.results.forEach(r => {
-        let regex = new RegExp(`(${q})`, "gi");
+    data.results.forEach(r=>{
+        let text=r.snippet.replace(new RegExp(`(${q})`,"gi"),
+        `<span class="highlight">$1</span>`);
 
-        let text = r.snippet.replace(regex,
-            `<span class="highlight">$1</span>`);
-
-        html += `
-            <div class="history-box" onclick="openChat(${r.conv_id})">
-                ${text}...
-            </div>
-        `;
+        html+=`
+        <div class="history-box" onclick="openChat(${r.conv_id},${r.msg_id})">
+            ${text}...
+        </div>`;
     });
 
-    resultsDiv.innerHTML = html;
-});
+    searchResults.innerHTML=html;
+};
 
-function openChat(id){
-    window.location.href = "/chat/" + id;
+function openChat(c,m){
+    let q=encodeURIComponent(searchBox.value);
+    location.href=`/chat/${c}?msg=${m}&q=${q}`;
 }
 
-// FILE MENU
+// JUMP + HIGHLIGHT
+window.onload=()=>{
+    let p=new URLSearchParams(location.search);
+    let msg=p.get("msg");
+    let q=p.get("q");
+
+    let box=document.getElementById("chatBox");
+
+    if(msg){
+        let el=document.getElementById("msg-"+msg);
+        if(el){
+            el.scrollIntoView({behavior:"smooth",block:"center"});
+
+            highlight(el,q);
+
+            el.style.border="2px solid yellow";
+            setTimeout(()=>el.style.border="",3000);
+        }
+    }else{
+        box.scrollTop=box.scrollHeight;
+    }
+};
+
+function highlight(el,q){
+    if(!q) return;
+
+    let regex=new RegExp(`(${q})`,"gi");
+
+    function walk(node){
+        if(node.nodeType===3){
+            if(regex.test(node.nodeValue)){
+                let span=document.createElement("span");
+                span.innerHTML=node.nodeValue.replace(regex,
+                    `<span class="highlight">$1</span>`);
+                node.replaceWith(span);
+            }
+        }else{
+            node.childNodes.forEach(walk);
+        }
+    }
+
+    walk(el);
+}
+
+// FILE
 function toggleMenu(){
-    document.getElementById("fileMenu").classList.toggle("d-none");
+    fileMenu.style.display=fileMenu.style.display==="block"?"none":"block";
 }
 function openFile(){
-    let f = document.getElementById("fileInput");
-    f.accept = ".pdf";
-    f.click();
+    fileInput.accept=".pdf";
+    fileInput.click();
 }
 function openImage(){
-    let f = document.getElementById("fileInput");
-    f.accept = "image/*";
-    f.click();
+    fileInput.accept="image/*";
+    fileInput.click();
 }
 
 // VOICE
-let recognition, isListening=false;
-const micBtn = document.getElementById("micBtn");
-
-micBtn.onclick = () => {
-    if(!('webkitSpeechRecognition' in window)){
-        alert("Voice not supported");
-        return;
-    }
+let recognition,isListening=false;
+micBtn.onclick=()=>{
+    if(!('webkitSpeechRecognition' in window)) return alert("Not supported");
 
     if(isListening){
         recognition.stop();
         return;
     }
 
-    recognition = new webkitSpeechRecognition();
+    recognition=new webkitSpeechRecognition();
     recognition.start();
 
     micBtn.classList.add("mic-active");
-    isListening = true;
+    isListening=true;
 
-    recognition.onresult = e => {
-        chatInput.value = e.results[0][0].transcript;
+    recognition.onresult=e=>{
+        chatInput.value=e.results[0][0].transcript;
     };
 
-    recognition.onend = () => {
+    recognition.onend=()=>{
         micBtn.classList.remove("mic-active");
-        isListening = false;
+        isListening=false;
     };
 };
 

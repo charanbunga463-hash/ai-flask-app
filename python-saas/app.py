@@ -170,16 +170,18 @@ def search():
         return {"results": []}
 
     q = request.args.get("q", "").strip()
-    if not q:
+
+    if len(q) < 2:
         return {"results": []}
 
     conn = get_db()
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("""
-        SELECT conversation_id, user_msg, bot_msg, type
+        SELECT id, conversation_id, user_msg, bot_msg
         FROM chats
-        WHERE username=?
+        WHERE username = ?
         AND (user_msg LIKE ? OR bot_msg LIKE ?)
         ORDER BY id DESC
         LIMIT 30
@@ -189,20 +191,25 @@ def search():
     conn.close()
 
     results = []
+
     for r in rows:
-        text = r["user_msg"] + " " + (r["bot_msg"] or "")
-        idx = text.lower().find(q.lower())
+        user_text = r["user_msg"] or ""
+        bot_text = r["bot_msg"] or ""
 
-        # snippet around match
-        start = max(idx - 40, 0)
-        end = idx + 40
+        full_text = user_text + " " + bot_text
 
-        snippet = text[start:end]
+        idx = full_text.lower().find(q.lower())
+
+        # fallback if not found (rare case)
+        if idx == -1:
+            idx = 0
+
+        snippet = full_text[max(0, idx-40): idx+40]
 
         results.append({
             "conv_id": r["conversation_id"],
-            "snippet": snippet,
-            "type": r["type"]
+            "msg_id": r["id"],   # ⭐ REQUIRED for jump
+            "snippet": snippet
         })
 
     return {"results": results}

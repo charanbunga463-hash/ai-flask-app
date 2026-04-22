@@ -1,348 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Tool</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional AI Interface</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<style>
-body{
-    background:#0f172a;
-    color:#e2e8f0;
-    font-family:'Segoe UI',sans-serif;
-    margin:0;
-}
+    <style>
+        :root {
+            --sidebar-width: 300px;
+            --transition-speed: 0.3s;
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --accent-blue: #2563eb;
+            --border-ui: #334155;
+        }
 
-/* ICON */
-.main-icon{
-    position:fixed;
-    top:10px;
-    left:10px;
-    background:#1e293b;
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    z-index:1100;
-}
+        body {
+            background: var(--bg-body);
+            color: #f8fafc;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-/* SIDEBAR */
-.sidebar{
-    width:300px;
-    background:#0f172a;
-    border-right:1px solid #334155;
-    height:100vh;
-    position:fixed;
-    left:-300px;
-    transition:0.3s;
-    padding:15px;
-    display:flex;
-    flex-direction:column;
-    z-index:1000;
-}
-.sidebar.open{ left:0; }
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-body);
+            border-right: 1px solid var(--border-ui);
+            height: 100%;
+            position: fixed;
+            left: calc(var(--sidebar-width) * -1);
+            transition: left var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            z-index: 1050;
+            padding: 1rem;
+        }
 
-.sidebar-content{
-    flex:1;
-    overflow-y:auto;
-}
+        .sidebar.open { left: 0; }
 
-/* CHAT */
-.chat-area{
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    margin-left:0;
-    transition:0.3s;
-}
+        /* --- MAIN CONTENT AREA --- */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            margin-left: 0;
+            transition: margin-left var(--transition-speed);
+            position: relative;
+        }
 
-body.sidebar-open .chat-area{
-    margin-left:300px;
-}
+        body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
-.input-area{
-    padding:15px;
-    border-top:1px solid #334155;
-    background:#1e293b;
-    transition:0.3s;
-}
+        /* --- UI ELEMENTS --- */
+        .menu-trigger {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--bg-card);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            border: 1px solid var(--border-ui);
+            transition: background 0.2s;
+        }
+        .menu-trigger:hover { background: var(--border-ui); }
 
-body.sidebar-open .input-area{
-    margin-left:300px;
-}
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 80px 15% 20px 15%; /* Responsive centering */
+        }
 
-/* MESSAGES */
-.messages{
-    flex:1;
-    overflow-y:auto;
-    padding:20px;
-}
+        /* Message Styling */
+        .user-box {
+            background: var(--accent-blue);
+            padding: 12px 20px;
+            border-radius: 15px 15px 0 15px;
+            margin: 15px 0 15px auto;
+            max-width: 80%;
+            width: fit-content;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-.user-box{
-    background:#1e40af;
-    padding:10px;
-    border-radius:10px;
-    text-align:right;
-    margin-top:10px;
-}
+        .response-box {
+            background: #020617;
+            padding: 20px;
+            border-radius: 0 15px 15px 15px;
+            margin: 15px 0;
+            border: 1px solid var(--border-ui);
+            max-width: 85%;
+        }
 
-.response-box{
-    background:#020617;
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
-    border:1px solid #334155;
-}
+        /* --- INPUT AREA --- */
+        .input-container {
+            padding: 20px 15%;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-ui);
+        }
 
-/* SEARCH */
-.search-box{ margin-top:10px; }
+        .custom-input-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-ui);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
 
-.history-box{
-    background:#1e293b;
-    padding:10px;
-    border-radius:10px;
-    margin-bottom:8px;
-    cursor:pointer;
-}
-.history-box:hover{ background:#334155; }
+        .custom-input-group input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px;
+            flex: 1;
+        }
+        .custom-input-group input:focus { outline: none; }
 
-/* HEADER */
-.sidebar-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+        /* --- SEARCH & HISTORY --- */
+        .history-item {
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:hover { border-color: var(--accent-blue); }
 
-/* FOOTER */
-.sidebar-footer{
-    border-top:1px solid #334155;
-    padding-top:10px;
-}
+        .highlight { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
 
-/* HIGHLIGHT */
-.highlight{
-    background:yellow;
-    color:black;
-    padding:2px;
-    border-radius:3px;
-}
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
+        .icon-btn:hover { color: white; }
 
-/* BUTTON */
-.icon-btn{
-    background:none;
-    border:none;
-    color:white;
-    font-size:18px;
-}
-</style>
+    </style>
 </head>
 
-<body>
+<body class="">
 
-<div id="mainIcon" class="main-icon">🤖</div>
+<div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="sidebar">
-
-    <div class="sidebar-header">
-        <h5>Chats</h5>
+<nav id="sidebar" class="sidebar">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0">History</h5>
         <button class="icon-btn" onclick="closeSidebar()">✖</button>
     </div>
 
-    <div class="sidebar-content">
-
-        <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
-
-        <input id="searchBox" class="form-control search-box" placeholder="Search messages...">
-
+    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
+    
+    <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search chats...">
+    
+    <div class="flex-grow-1 overflow-auto">
         <div id="searchResults"></div>
-
         <div id="chatHistory">
-        {% for conv in conversations %}
-            <div class="history-box">
-
-                <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;flex:1;">
-                    {{ conv[1] }}
-                </a>
-
-                <!-- DELETE -->
-                <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                    <button class="icon-btn">🗑</button>
+            {% for conv in conversations %}
+                <div class="history-item">
+                    <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
+                        {{ conv[1] }}
+                    </a>
+                    <div class="d-flex">
+                        <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline">
+                            <button class="icon-btn">🗑</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="POST" action="/edit_chat/{{ conv[0] }}">
+                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Enter new name...">
                 </form>
-
-                <!-- RENAME -->
-                <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
-            </div>
-
-            <input id="rename-{{ conv[0] }}"
-                   class="form-control form-control-sm"
-                   style="display:none;"
-                   onkeydown="handleRename(event,'{{ conv[0] }}')">
-        {% endfor %}
+            {% endfor %}
         </div>
-
     </div>
 
-    <div class="sidebar-footer">
+    <div class="pt-3 border-top border-secondary">
         <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
     </div>
+</nav>
 
-</div>
+<div class="main-wrapper">
+    <div id="chatBox" class="chat-scroll-area">
+        {% for msg in chat %}
+            <div class="user-box">{{ msg.user }}</div>
+            
+            <div class="response-box">
+                {% if msg.type == "text" %}
+                    {{ msg.bot | safe }}
+                {% elif msg.type == "image" %}
+                    <div class="text-center">
+                        <img src="{{ msg.image }}" class="img-fluid rounded border border-secondary">
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
 
-<!-- CHAT -->
-<div class="chat-area">
-
-<div id="chatBox" class="messages">
-
-{% for msg in chat %}
-
-<div class="user-box">{{ msg.user }}</div>
-
-{% if msg.type == "text" %}
-<div class="response-box">
-    {{ msg.bot | safe }}
-</div>
-{% endif %}
-
-{% if msg.type == "image" %}
-<div class="response-box text-center">
-    <img src="{{ msg.image }}" style="max-width:100%;">
-</div>
-{% endif %}
-
-{% endfor %}
-
-</div>
-
-<!-- INPUT -->
-<div class="input-area">
-<form method="POST" action="/tool" enctype="multipart/form-data">
-
-<div class="input-group">
-
-<button type="button" class="btn btn-outline-light">➕</button>
-
-<input class="form-control" id="chatInput" name="input" placeholder="Ask anything...">
-
-<!-- MIC -->
-<button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
-
-<button class="btn btn-primary">Send</button>
-
-</div>
-
-</form>
-</div>
-
+    <div class="input-container">
+        <form method="POST" action="/tool" enctype="multipart/form-data">
+            <div class="custom-input-group">
+                <button type="button" class="icon-btn">➕</button>
+                <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
+                <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
+                <button type="submit" class="btn btn-primary px-4">Send</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
+const sidebar = document.getElementById("sidebar");
+const menuTrigger = document.getElementById("menuTrigger");
+const chatBox = document.getElementById("chatBox");
 
-const sidebar=document.getElementById("sidebar");
-
-/* OPEN SIDEBAR */
-document.getElementById("mainIcon").onclick=()=>{
+/* TOGGLE LOGIC */
+menuTrigger.onclick = () => {
     sidebar.classList.add("open");
     document.body.classList.add("sidebar-open");
 };
 
-/* CLOSE SIDEBAR */
-function closeSidebar(){
+function closeSidebar() {
     sidebar.classList.remove("open");
     document.body.classList.remove("sidebar-open");
 }
 
-/* SEARCH SAFE FIX */
-searchBox.oninput=async ()=>{
-    let q=searchBox.value.trim();
-
-    if(q.length<2){
-        searchResults.innerHTML="";
-        chatHistory.style.display="block";
-        return;
-    }
-
-    chatHistory.style.display="none";
-
-    let res=await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data=await res.json();
-
-    let html="";
-
-    data.results.forEach(r=>{
-        let text=r.snippet.replace(
-            new RegExp(`(${q})`,"gi"),
-            `<span class="highlight">$1</span>`
-        );
-
-        html+=`
-        <div class="history-box"
-             onclick='openChat(${r.conv_id},${r.msg_id},${JSON.stringify(q)})'>
-            ${text}
-        </div>`;
-    });
-
-    searchResults.innerHTML=html;
+/* AUTO-SCROLL TO BOTTOM */
+window.onload = () => {
+    chatBox.scrollTop = chatBox.scrollHeight;
 };
 
-function openChat(c,m,q){
-    window.location.href=`/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
-}
+/* SEARCH */
+searchBox.oninput = async () => {
+    let q = searchBox.value.trim();
+    if(q.length < 2) {
+        searchResults.innerHTML = "";
+        chatHistory.style.display = "block";
+        return;
+    }
+    chatHistory.style.display = "none";
+
+    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data = await res.json();
+    let html = "";
+
+    data.results.forEach(r => {
+        let text = r.snippet.replace(new RegExp(`(${q})`,"gi"), `<span class="highlight">$1</span>`);
+        html += `<div class="history-item" onclick="location.href='/chat/${r.conv_id}?msg=${r.msg_id}&q=${encodeURIComponent(q)}'">${text}</div>`;
+    });
+    searchResults.innerHTML = html;
+};
 
 /* RENAME */
-function enableRename(id){
-    document.getElementById("rename-"+id).style.display="block";
+function enableRename(id) {
+    const el = document.getElementById("rename-" + id);
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    el.focus();
 }
 
-function handleRename(e,id){
-    if(e.key==="Enter"){
-        let val=e.target.value;
+/* VOICE */
+let isListening = false;
+const micBtn = document.getElementById("micBtn");
 
-        let form=document.createElement("form");
-        form.method="POST";
-        form.action="/edit_chat/"+id;
-
-        let i=document.createElement("input");
-        i.name="title";
-        i.value=val;
-
-        form.appendChild(i);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-/* MIC FIXED */
-let recognition;
-let isListening=false;
-const micBtn=document.getElementById("micBtn");
-
-micBtn.onclick=()=>{
-    if(!('webkitSpeechRecognition' in window)){
-        alert("Not supported");
+micBtn.onclick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Voice not supported");
         return;
     }
 
-    if(isListening){
+    const recognition = new SpeechRecognition();
+    if(isListening) {
         recognition.stop();
         return;
     }
 
-    recognition=new webkitSpeechRecognition();
     recognition.start();
+    isListening = true;
+    micBtn.style.color = "red";
 
-    isListening=true;
-
-    recognition.onresult=(e)=>{
-        chatInput.value=e.results[0][0].transcript;
+    recognition.onresult = (e) => {
+        document.getElementById("chatInput").value = e.results[0][0].transcript;
     };
 
-    recognition.onend=()=>{
-        isListening=false;
+    recognition.onend = () => {
+        isListening = false;
+        micBtn.style.color = "#94a3b8";
     };
 };
-
 </script>
 
 </body>

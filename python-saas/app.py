@@ -167,32 +167,45 @@ def open_chat(conv_id):
 @app.route("/search")
 def search():
     if "user" not in session:
-        return jsonify({"results": []})
+        return {"results": []}
 
-    q = request.args.get("q", "")
+    q = request.args.get("q", "").strip()
+    if not q:
+        return {"results": []}
 
     conn = get_db()
     c = conn.cursor()
 
     c.execute("""
-        SELECT user_msg, bot_msg, type
+        SELECT conversation_id, user_msg, bot_msg, type
         FROM chats
         WHERE username=?
         AND (user_msg LIKE ? OR bot_msg LIKE ?)
         ORDER BY id DESC
-        LIMIT 20
+        LIMIT 30
     """, (session["user"], f"%{q}%", f"%{q}%"))
 
     rows = c.fetchall()
     conn.close()
 
-    results = [{
-        "user": r["user_msg"],
-        "bot": r["bot_msg"],
-        "type": r["type"]
-    } for r in rows]
+    results = []
+    for r in rows:
+        text = r["user_msg"] + " " + (r["bot_msg"] or "")
+        idx = text.lower().find(q.lower())
 
-    return jsonify({"results": results})
+        # snippet around match
+        start = max(idx - 40, 0)
+        end = idx + 40
+
+        snippet = text[start:end]
+
+        results.append({
+            "conv_id": r["conversation_id"],
+            "snippet": snippet,
+            "type": r["type"]
+        })
+
+    return {"results": results}
 
 # ---------- DELETE ----------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])

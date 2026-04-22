@@ -40,22 +40,21 @@ body{
     transition:.3s;
     z-index:1000;
     padding:15px;
-    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
 }
 .sidebar.open{ left:0; }
+
+.sidebar-content{
+    flex:1;
+    overflow-y:auto;
+}
 
 /* CHAT */
 .chat-area{
     display:flex;
     flex-direction:column;
     height:100vh;
-}
-
-.top-bar{
-    padding:10px 15px;
-    border-bottom:1px solid #334155;
-    display:flex;
-    justify-content:space-between;
 }
 
 .messages{
@@ -87,30 +86,35 @@ body{
     border:1px solid #334155;
 }
 
-/* INPUT */
-.input-box{
-    background:#0f172a;
-    border:1px solid #334155;
-    color:white;
-}
-
-/* HISTORY */
+/* HISTORY / SEARCH RESULTS */
 .history-box{
     background:#1e293b;
     padding:10px;
     border-radius:10px;
     margin-bottom:10px;
-    display:flex;
-    align-items:center;
+    cursor:pointer;
 }
-.history-box.active{ background:#334155; }
-
-.chat-title{ flex:1; }
-.rename-input{ display:none; flex:1; }
+.history-box:hover{
+    background:#334155;
+}
 
 /* SEARCH */
 .search-box{
-    margin-bottom:10px;
+    margin:10px 0;
+}
+
+/* FOOTER */
+.sidebar-footer{
+    border-top:1px solid #334155;
+    padding-top:10px;
+}
+
+/* HIGHLIGHT */
+.highlight{
+    background:yellow;
+    color:black;
+    padding:2px;
+    border-radius:3px;
 }
 
 /* FILE MENU */
@@ -130,13 +134,11 @@ body{
     border:none;
     color:white;
     padding:8px;
-    text-align:left;
 }
 .file-menu button:hover{
     background:#334155;
 }
 
-/* MIC */
 .mic-active{
     background:red !important;
     color:white !important;
@@ -151,58 +153,42 @@ body{
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
 
-    <div class="d-flex justify-content-between mb-2">
+    <div class="d-flex justify-content-between">
         <h5>Chats</h5>
         <button class="btn btn-sm btn-outline-light" id="closeBtn">✖</button>
     </div>
 
-    <!-- SEARCH -->
-    <input type="text" id="searchBox" class="form-control search-box" placeholder="Search chats...">
+    <div class="sidebar-content">
 
-    <div id="chatList">
+        <a href="/new_chat" class="btn btn-primary w-100 mt-2 mb-2">+ New Chat</a>
+
+        <!-- SEARCH -->
+        <input type="text" id="searchBox" class="form-control search-box" placeholder="Search messages...">
+
+        <!-- SEARCH RESULTS -->
+        <div id="searchResults"></div>
+
+        <!-- NORMAL HISTORY -->
+        <div id="chatHistory">
         {% for conv in conversations %}
-        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-            
-            <div class="chat-title" id="title-{{ conv[0] }}">
+            <div class="history-box">
                 <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;">
                     {{ conv[1] }}
                 </a>
             </div>
-
-            <input type="text"
-                id="input-{{ conv[0] }}"
-                class="form-control form-control-sm rename-input"
-                value="{{ conv[1] }}"
-                onkeydown="handleRename(event,'{{ conv[0] }}')">
-
-            <div class="dropdown ms-2">
-                <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-                <ul class="dropdown-menu dropdown-menu-dark">
-                    <li><button class="dropdown-item"
-                        onclick="enableRename('{{ conv[0] }}')">Rename</button></li>
-                    <li>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                            <button class="dropdown-item text-danger">Delete</button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-
-        </div>
         {% endfor %}
+        </div>
+
     </div>
 
-    <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
+    <div class="sidebar-footer">
+        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
+    </div>
 
 </div>
 
 <!-- CHAT -->
 <div class="chat-area">
-
-    <div class="top-bar">
-        <h5>AI Assistant</h5>
-        <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
-    </div>
 
     <div class="messages" id="chatBox">
         {% for msg in chat %}
@@ -228,7 +214,7 @@ body{
 
                 <input type="file" id="fileInput" name="file" class="d-none">
 
-                <input class="form-control input-box"
+                <input class="form-control"
                        id="chatInput"
                        name="input"
                        placeholder="Ask anything...">
@@ -247,8 +233,6 @@ body{
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 
 // SIDEBAR
@@ -262,14 +246,46 @@ window.onload = () => {
     if(box) box.scrollTop = box.scrollHeight;
 };
 
-// SEARCH FILTER (frontend only)
-document.getElementById("searchBox").addEventListener("input", function(){
-    let q = this.value.toLowerCase();
-    document.querySelectorAll(".history-box").forEach(box => {
-        let text = box.innerText.toLowerCase();
-        box.style.display = text.includes(q) ? "flex" : "none";
+// 🔍 REAL SEARCH
+const searchBox = document.getElementById("searchBox");
+const resultsDiv = document.getElementById("searchResults");
+const historyDiv = document.getElementById("chatHistory");
+
+searchBox.addEventListener("input", async function(){
+    let q = this.value.trim();
+
+    if(q.length < 2){
+        resultsDiv.innerHTML = "";
+        historyDiv.style.display = "block";
+        return;
+    }
+
+    historyDiv.style.display = "none";
+
+    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data = await res.json();
+
+    let html = "";
+
+    data.results.forEach(r => {
+        let regex = new RegExp(`(${q})`, "gi");
+
+        let text = r.snippet.replace(regex,
+            `<span class="highlight">$1</span>`);
+
+        html += `
+            <div class="history-box" onclick="openChat(${r.conv_id})">
+                ${text}...
+            </div>
+        `;
     });
+
+    resultsDiv.innerHTML = html;
 });
+
+function openChat(id){
+    window.location.href = "/chat/" + id;
+}
 
 // FILE MENU
 function toggleMenu(){
@@ -316,34 +332,6 @@ micBtn.onclick = () => {
         isListening = false;
     };
 };
-
-// RENAME
-function enableRename(id){
-    document.getElementById("title-"+id).style.display="none";
-    let input=document.getElementById("input-"+id);
-    input.style.display="block";
-    input.focus();
-}
-
-function handleRename(e,id){
-    if(e.key==="Enter"){
-        let val=e.target.value.trim();
-        if(!val) return;
-
-        let form=document.createElement("form");
-        form.method="POST";
-        form.action="/edit_chat/"+id;
-
-        let inp=document.createElement("input");
-        inp.type="hidden";
-        inp.name="title";
-        inp.value=val;
-
-        form.appendChild(inp);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
 
 </script>
 

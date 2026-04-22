@@ -1,275 +1,446 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Professional AI Interface</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional AI Interface</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-<style>
-:root {
-    --sidebar-width: 300px;
-    --transition-speed: 0.3s;
-    --bg-body: #0f172a;
-    --bg-card: #1e293b;
-    --accent-blue: #2563eb;
-    --border-ui: #334155;
-}
+    <style>
+        :root {
+            --sidebar-width: 300px;
+            --transition-speed: 0.3s;
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --accent-blue: #2563eb;
+            --border-ui: #334155;
+        }
 
-body {
-    background: var(--bg-body);
-    color: #f8fafc;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
+        body {
+            background: var(--bg-body);
+            color: #f8fafc;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-/* SIDEBAR */
-.sidebar {
-    width: var(--sidebar-width);
-    background: var(--bg-body);
-    border-right: 1px solid var(--border-ui);
-    height: 100%;
-    position: fixed;
-    left: calc(var(--sidebar-width) * -1);
-    transition: left var(--transition-speed);
-    display: flex;
-    flex-direction: column;
-    z-index: 1050;
-    padding: 1rem;
-}
-.sidebar.open { left: 0; }
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-body);
+            border-right: 1px solid var(--border-ui);
+            height: 100%;
+            position: fixed;
+            left: calc(var(--sidebar-width) * -1);
+            transition: left var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            z-index: 1050;
+            padding: 1rem;
+        }
 
-/* MAIN */
-.main-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    margin-left: 0;
-    transition: margin-left var(--transition-speed);
-    position: relative;
-}
-body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
+        .sidebar.open { left: 0; }
 
-/* MENU */
-.menu-trigger {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    background: var(--bg-card);
-    padding: 8px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    border: 1px solid var(--border-ui);
-}
-.menu-trigger:hover { background: var(--border-ui); }
+        /* --- MAIN CONTENT AREA --- */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            margin-left: 0;
+            transition: margin-left var(--transition-speed);
+            position: relative;
+        }
 
-/* STORIES BAR */
-#storiesBar {
-    display: flex;
-    overflow-x: auto;
-    gap: 15px;
-    padding: 10px 15%;
-    border-bottom: 1px solid var(--border-ui);
-}
+        body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
-/* CHAT */
-.chat-scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px 15%;
-}
+        /* --- STORIES SECTION --- */
+        .stories-container {
+            display: flex;
+            gap: 15px;
+            padding: 15px 15%;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border-ui);
+            background: rgba(30, 41, 59, 0.5);
+        }
+        .story-circle {
+            min-width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-blue);
+            padding: 2px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .story-circle img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .add-story-btn {
+            min-width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: var(--border-ui);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+        }
 
-/* MESSAGES */
-.user-box {
-    background: var(--accent-blue);
-    padding: 12px 20px;
-    border-radius: 15px 15px 0 15px;
-    margin: 15px 0 15px auto;
-    max-width: 80%;
-}
+        /* --- UI ELEMENTS --- */
+        .menu-trigger {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--bg-card);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            border: 1px solid var(--border-ui);
+            transition: background 0.2s;
+        }
+        .menu-trigger:hover { background: var(--border-ui); }
 
-.response-box {
-    background: #020617;
-    padding: 20px;
-    border-radius: 0 15px 15px 15px;
-    margin: 15px 0;
-    border: 1px solid var(--border-ui);
-    max-width: 85%;
-}
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 15%; 
+        }
 
-/* INPUT */
-.input-container {
-    padding: 20px 15%;
-    border-top: 1px solid var(--border-ui);
-}
+        /* Message Styling */
+        .user-box {
+            background: var(--accent-blue);
+            padding: 12px 20px;
+            border-radius: 15px 15px 0 15px;
+            margin: 15px 0 15px auto;
+            max-width: 80%;
+            width: fit-content;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-.custom-input-group {
-    background: var(--bg-card);
-    border: 1px solid var(--border-ui);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    padding: 5px 15px;
-}
+        .response-box {
+            background: #020617;
+            padding: 20px;
+            border-radius: 0 15px 15px 15px;
+            margin: 15px 0;
+            border: 1px solid var(--border-ui);
+            max-width: 85%;
+            word-wrap: break-word;
+        }
 
-.custom-input-group input {
-    background: transparent;
-    border: none;
-    color: white;
-    flex: 1;
-}
+        /* --- INPUT AREA --- */
+        .input-container {
+            padding: 20px 15%;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-ui);
+        }
 
-/* STORY VIEWER */
-#storyViewer {
-    display:none;
-    position:fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background:black;
-    z-index:2000;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-}
+        .custom-input-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-ui);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
 
-#progressBar {
-    position:absolute;
-    top:0;
-    left:0;
-    height:4px;
-    background:#2563eb;
-    width:0%;
-}
+        .custom-input-group input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px;
+            flex: 1;
+        }
+        .custom-input-group input:focus { outline: none; }
 
-/* CURSOR */
-.cursor {
-    display:inline-block;
-    width:8px;
-    height:18px;
-    background:var(--accent-blue);
-    animation:blink 0.8s infinite;
-}
-@keyframes blink {50%{opacity:0;}}
-</style>
+        /* --- SEARCH & HISTORY --- */
+        .history-item {
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:hover { border-color: var(--accent-blue); }
+
+        .highlight { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
+
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
+        .icon-btn:hover { color: white; }
+
+        /* Cursor blinking for streaming */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: var(--accent-blue);
+            margin-left: 4px;
+            animation: blink 0.8s infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Story Modal Styling */
+        .modal-content { background: var(--bg-card); color: white; border: 1px solid var(--border-ui); }
+    </style>
 </head>
 
 <body>
 
 <div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
 
-<!-- SIDEBAR (UNCHANGED) -->
 <nav id="sidebar" class="sidebar">
-    <h5>History</h5>
-    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New</a>
-    <input id="searchBox" class="form-control mb-3 bg-dark text-white" placeholder="Search">
-    <div id="searchResults"></div>
-    <div id="chatHistory">
-        {% for conv in conversations %}
-        <div class="history-item">
-            <a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
-        </div>
-        {% endfor %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0">History</h5>
+        <button class="icon-btn" onclick="closeSidebar()">✖</button>
     </div>
-    <a href="/logout" class="btn btn-outline-danger">Logout</a>
+
+    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
+    
+    <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search chats...">
+    
+    <div class="flex-grow-1 overflow-auto">
+        <div id="searchResults"></div>
+        <div id="chatHistory">
+            {% for conv in conversations %}
+                <div class="history-item">
+                    <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
+                        {{ conv[1] }}
+                    </a>
+                    <div class="d-flex">
+                        <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline" onsubmit="return confirm('Delete this chat?')">
+                            <button class="icon-btn">🗑</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="POST" action="/edit_chat/{{ conv[0] }}">
+                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Press Enter to rename...">
+                </form>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="pt-3 border-top border-secondary">
+        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
+    </div>
 </nav>
 
 <div class="main-wrapper">
+    <div class="stories-container" id="storyBar">
+        <div class="add-story-btn" data-bs-toggle="modal" data-bs-target="#storyModal" title="Add Story">+</div>
+        </div>
 
-<!-- STORIES -->
-<div id="storiesBar">
-    <div id="storiesContainer" style="display:flex; gap:15px;"></div>
-</div>
-
-<!-- CHAT -->
-<div id="chatBox" class="chat-scroll-area">
-    {% for msg in chat %}
-    <div class="user-box">{{ msg.user }}</div>
-    <div class="response-box">
-        {% if msg.type == "text" %}
-            {{ msg.bot | safe }}
-        {% else %}
-            <img src="{{ msg.image }}" class="img-fluid">
-        {% endif %}
+    <div id="chatBox" class="chat-scroll-area">
+        {% for msg in chat %}
+            <div class="user-box">{{ msg.user }}</div>
+            
+            <div class="response-box">
+                {% if msg.type == "text" %}
+                    <div class="markdown-content">{{ msg.bot | safe }}</div>
+                {% elif msg.type == "image" %}
+                    <div class="text-center">
+                        <img src="{{ msg.image }}" class="img-fluid rounded border border-secondary shadow" style="max-height: 400px;">
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div id="streamingContainer"></div>
     </div>
-    {% endfor %}
-    <div id="streamingContainer"></div>
+
+    <div class="input-container">
+        <form id="chatForm" method="POST" action="/tool" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="file" style="display:none;" accept="image/*,application/pdf">
+            
+            <div class="custom-input-group">
+                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Upload PDF or Image">➕</button>
+                <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
+                <button type="button" id="micBtn" class="icon-btn me-2" title="Voice Input">🎤</button>
+                <button type="submit" class="btn btn-primary px-4 shadow-sm">Send</button>
+            </div>
+            <div id="fileStatus" style="font-size: 12px; color: #60a5fa; margin-top: 8px; margin-left: 45px; font-weight: 500;"></div>
+        </form>
+    </div>
 </div>
 
-<!-- INPUT -->
-<div class="input-container">
-<form method="POST" action="/tool" enctype="multipart/form-data">
-<div class="custom-input-group">
-<input name="input" placeholder="Ask...">
-<button class="btn btn-primary">Send</button>
-</div>
-</form>
+<div class="modal fade" id="storyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/add_story" method="POST">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Share a Story</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea name="content" class="form-control bg-dark text-white border-secondary mb-3" placeholder="What's on your mind?"></textarea>
+                    <input name="media_url" class="form-control bg-dark text-white border-secondary" placeholder="Image URL (Optional)">
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-primary w-100">Post Story</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-</div>
-
-<!-- STORY VIEWER -->
-<div id="storyViewer">
-    <div id="progressBar"></div>
-    <div id="storyContent"></div>
-    <button onclick="closeStory()">✖</button>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+const sidebar = document.getElementById("sidebar");
+const menuTrigger = document.getElementById("menuTrigger");
+const chatBox = document.getElementById("chatBox");
+const fileInput = document.getElementById("fileInput");
+const fileStatus = document.getElementById("fileStatus");
 
-/* SIDEBAR */
-menuTrigger.onclick=()=>{sidebar.classList.add("open");document.body.classList.add("sidebar-open");}
+/* LOAD STORIES FROM BACKEND */
+async function loadStories() {
+    const res = await fetch('/stories');
+    const stories = await res.json();
+    const bar = document.getElementById('storyBar');
+    
+    stories.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'story-circle';
+        div.onclick = () => {
+            alert(`${s.user} says: ${s.content}`);
+            fetch(`/view_story/${s.id}`); // Track view
+        };
+        const img = s.media ? s.media : `https://ui-avatars.com/api/?name=${s.user}&background=random`;
+        div.innerHTML = `<img src="${img}" title="${s.user}">`;
+        bar.appendChild(div);
+    });
+}
+loadStories();
 
-/* STORIES */
-let stories=[],i=0,timer;
-
-async function loadStories(){
- let res=await fetch("/stories");
- stories=await res.json();
- let c=document.getElementById("storiesContainer");
- c.innerHTML="";
- stories.forEach((s,idx)=>{
-  c.innerHTML+=`<div onclick="openStory(${idx})">
-  <div style="width:60px;height:60px;border-radius:50%;border:3px solid #2563eb;display:flex;align-items:center;justify-content:center;">
-  ${s.user[0]}
-  </div></div>`;
- });
+/* FILE SELECTION FEEDBACK */
+fileInput.onchange = () => {
+    if (fileInput.files.length > 0) {
+        fileStatus.innerHTML = `<span>📎 ${fileInput.files[0].name}</span> <button type="button" class="btn-close btn-close-white ms-2" style="font-size:8px" onclick="clearFile()"></button>`;
+    }
+};
+function clearFile() {
+    fileInput.value = "";
+    fileStatus.innerHTML = "";
 }
 
-function openStory(idx){
- i=idx;
- storyViewer.style.display="flex";
- showStory();
+/* SIDEBAR TOGGLE */
+menuTrigger.onclick = () => {
+    sidebar.classList.add("open");
+    document.body.classList.add("sidebar-open");
+};
+function closeSidebar() {
+    sidebar.classList.remove("open");
+    document.body.classList.remove("sidebar-open");
 }
 
-function showStory(){
- let s=stories[i];
- storyContent.innerHTML=`<p>${s.content}</p>`;
- progressBar.style.width="0%";
- setTimeout(()=>{progressBar.style.width="100%";},50);
- timer=setTimeout(nextStory,5000);
- fetch(`/view_story/${s.id}`,{method:"POST"});
+/* AUTO-SCROLL */
+function scrollToBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+window.onload = scrollToBottom;
+
+/* STREAMING LOGIC */
+const urlParams = new URLSearchParams(window.location.search);
+const streamPrompt = urlParams.get('prompt');
+
+if (streamPrompt) {
+    const streamingContainer = document.getElementById('streamingContainer');
+    const uBox = document.createElement('div');
+    uBox.className = 'user-box';
+    uBox.innerText = streamPrompt;
+    streamingContainer.appendChild(uBox);
+
+    const rBox = document.createElement('div');
+    rBox.className = 'response-box';
+    rBox.innerHTML = '<span id="streamTarget"></span><span class="cursor"></span>';
+    streamingContainer.appendChild(rBox);
+    scrollToBottom();
+
+    const streamTarget = document.getElementById('streamTarget');
+    const eventSource = new EventSource(`/stream?prompt=${encodeURIComponent(streamPrompt)}`);
+    let accumulatedText = "";
+
+    eventSource.onmessage = (event) => {
+        if (event.data === "[DONE]") {
+            eventSource.close();
+            document.querySelector('.cursor').remove();
+            setTimeout(() => { window.location.href = window.location.pathname; }, 1000);
+            return;
+        }
+        try {
+            const data = JSON.parse(event.data);
+            accumulatedText += data.chunk;
+            // Render markdown as it streams
+            streamTarget.innerHTML = marked.parse(accumulatedText);
+            scrollToBottom();
+        } catch (e) { console.error("Stream error", e); }
+    };
 }
 
-function nextStory(){
- i++;
- if(i>=stories.length){closeStory();return;}
- showStory();
+/* SEARCH FUNCTIONALITY */
+searchBox.oninput = async () => {
+    let q = searchBox.value.trim();
+    if(q.length < 2) {
+        searchResults.innerHTML = "";
+        chatHistory.style.display = "block";
+        return;
+    }
+    chatHistory.style.display = "none";
+
+    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data = await res.json();
+    let html = "";
+
+    data.results.forEach(r => {
+        let text = r.snippet.replace(new RegExp(`(${q})`,"gi"), `<span class="highlight">$1</span>`);
+        html += `<div class="history-item" onclick="location.href='/chat/${r.conv_id}'">${text}</div>`;
+    });
+    searchResults.innerHTML = html || "<div class='p-2 text-muted'>No results found</div>";
+};
+
+/* RENAME CHAT */
+function enableRename(id) {
+    const el = document.getElementById("rename-" + id);
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    el.focus();
 }
 
-function closeStory(){
- storyViewer.style.display="none";
- clearTimeout(timer);
-}
+/* VOICE RECOGNITION */
+let isListening = false;
+const micBtn = document.getElementById("micBtn");
+micBtn.onclick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Voice recognition not supported in this browser.");
+        return;
+    }
+    const recognition = new SpeechRecognition();
+    if(isListening) { recognition.stop(); return; }
 
-window.onload=loadStories;
+    recognition.start();
+    isListening = true;
+    micBtn.style.color = "#ef4444";
 
+    recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById("chatInput").value = transcript;
+    };
+    recognition.onend = () => {
+        isListening = false;
+        micBtn.style.color = "#94a3b8";
+    };
+};
 </script>
-
 </body>
 </html>

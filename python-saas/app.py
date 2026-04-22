@@ -392,6 +392,46 @@ def view_story(story_id):
 
     return jsonify({"status": "ok"})
 
+# ---------- DELETE CHAT ----------
+@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
+def delete_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Delete all messages in the conversation first (Foreign Key cleanup)
+    c.execute("DELETE FROM chats WHERE conversation_id=%s AND username=%s", (conv_id, session["user"]))
+    # Delete the conversation itself
+    c.execute("DELETE FROM conversations WHERE id=%s AND username=%s", (conv_id, session["user"]))
+
+    conn.commit()
+    conn.close()
+    
+    # If the deleted chat was the active one, clear the session variable
+    if session.get("conv_id") == conv_id:
+        session.pop("conv_id", None)
+
+    return redirect("/")
+
+# ---------- RENAME CHAT ----------
+@app.route("/edit_chat/<int:conv_id>", methods=["POST"])
+def edit_chat(conv_id):
+    if "user" not in session:
+        return redirect("/login")
+
+    new_title = request.form.get("title")
+    if new_title:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("UPDATE conversations SET title=%s WHERE id=%s AND username=%s", 
+                  (new_title, conv_id, session["user"]))
+        conn.commit()
+        conn.close()
+
+    return redirect("/")
+
 # ---------- AUTH (SECURE) ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():

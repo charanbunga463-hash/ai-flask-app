@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Professional Dashboard</title>
+    <title>Professional AI Dashboard</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -11,17 +11,17 @@
     <style>
         :root {
             --sidebar-width: 300px;
+            --transition-speed: 0.3s;
             --bg-body: #0f172a;
             --bg-card: #1e293b;
             --accent-blue: #2563eb;
             --border-ui: #334155;
-            --text-main: #f8fafc;
         }
 
         body {
             background: var(--bg-body);
-            color: var(--text-main);
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #f8fafc;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
@@ -31,57 +31,67 @@
         /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
-            background: #0b1120;
+            background: var(--bg-body);
             border-right: 1px solid var(--border-ui);
             height: 100%;
             position: fixed;
             left: calc(var(--sidebar-width) * -1);
-            transition: 0.3s ease;
-            z-index: 1050;
-            padding: 1.5rem;
+            transition: left var(--transition-speed);
             display: flex;
             flex-direction: column;
+            z-index: 1050;
+            padding: 1rem;
         }
         .sidebar.open { left: 0; }
 
+        /* --- MAIN WRAPPER --- */
         .main-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
             height: 100%;
-            transition: 0.3s ease;
+            transition: margin-left var(--transition-speed);
             position: relative;
         }
         body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
         /* --- STORIES --- */
-        .stories-bar {
+        .stories-container {
             display: flex;
             gap: 15px;
-            padding: 15px 10%;
+            padding: 15px 15%;
+            overflow-x: auto;
             background: #111827;
             border-bottom: 1px solid var(--border-ui);
-            overflow-x: auto;
         }
-        .story-item {
-            min-width: 60px; height: 60px;
+        .story-circle {
+            min-width: 60px;
+            height: 60px;
             border-radius: 50%;
             border: 2px solid var(--accent-blue);
             cursor: pointer;
+            padding: 2px;
             overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-            background: var(--bg-card);
         }
-        .story-item img { width: 100%; height: 100%; object-fit: cover; }
-        .add-story { border: 2px dashed #475569; font-size: 24px; color: #475569; }
+        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .add-story-btn {
+            min-width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px dashed #64748b;
+        }
 
         /* --- CHAT AREA --- */
         .chat-scroll-area {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 10%;
+            padding: 20px 15%;
         }
-
         .user-box {
             background: var(--accent-blue);
             padding: 12px 20px;
@@ -89,21 +99,22 @@
             margin: 15px 0 15px auto;
             max-width: 80%;
             width: fit-content;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
         .response-box {
             background: #020617;
             padding: 20px;
             border-radius: 0 15px 15px 15px;
             margin: 15px 0;
             border: 1px solid var(--border-ui);
-            max-width: 90%;
-            line-height: 1.6;
+            max-width: 85%;
         }
+        .response-box img { max-width: 100%; border-radius: 10px; margin-top: 10px; }
 
         /* --- INPUT --- */
         .input-container {
-            padding: 20px 10%;
+            padding: 20px 15%;
+            background: var(--bg-body);
             border-top: 1px solid var(--border-ui);
         }
         .custom-input-group {
@@ -115,70 +126,93 @@
             padding: 5px 15px;
         }
         .custom-input-group input {
-            background: transparent; border: none; color: white;
-            flex: 1; padding: 12px; outline: none;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 12px;
+            flex: 1;
+            outline: none;
         }
 
         .menu-trigger {
-            position: absolute; top: 15px; left: 15px;
-            background: var(--bg-card); padding: 8px 15px;
-            border-radius: 8px; cursor: pointer; z-index: 1000;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--bg-card);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
             border: 1px solid var(--border-ui);
         }
 
-        /* --- HISTORY ITEMS --- */
         .history-item {
+            padding: 10px;
             background: var(--bg-card);
-            padding: 10px; border-radius: 8px;
+            border-radius: 8px;
             margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
         }
-        .history-item a { 
-            color: #cbd5e1; text-decoration: none; font-size: 0.9rem; 
-            flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        .history-item:hover { border-color: var(--accent-blue); }
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; }
+        
+        .cursor {
+            display: inline-block;
+            width: 8px; height: 18px;
+            background: var(--accent-blue);
+            animation: blink 0.8s infinite;
+            vertical-align: middle;
         }
-
-        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; }
-        .icon-btn:hover { color: white; }
-
-        .cursor { display: inline-block; width: 8px; height: 18px; background: var(--accent-blue); animation: blink 0.8s infinite; vertical-align: middle; }
         @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
-<body class="sidebar-open">
+<body>
 
-<div id="menuTrigger" class="menu-trigger">☰</div>
+<div id="menuTrigger" class="menu-trigger">☰ Menu</div>
 
-<nav id="sidebar" class="sidebar open">
+<nav id="sidebar" class="sidebar">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="m-0">AI Dashboard</h5>
+        <h5 class="m-0">AI Chat History</h5>
         <button class="icon-btn" onclick="closeSidebar()">✕</button>
     </div>
 
-    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Chat</a>
+    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
     
-    <input id="searchBox" class="form-control bg-dark text-white border-secondary mb-3" placeholder="Search..." onkeyup="searchChats()">
+    <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search chats...">
     
-    <div class="flex-grow-1 overflow-auto" id="historyList">
-        {% for conv in conversations %}
-        <div class="history-item" id="conv-{{ conv[0] }}">
-            <a href="/chat/{{ conv[0] }}">{{ conv[1] }}</a>
-            <div class="d-flex gap-1">
-                <button class="icon-btn" onclick="renameChat('{{ conv[0] }}')">✏️</button>
-                <button class="icon-btn" onclick="deleteHistory('{{ conv[0] }}')">🗑</button>
-            </div>
+    <div class="flex-grow-1 overflow-auto">
+        <div id="searchResults"></div>
+        <div id="chatHistory">
+            {% for conv in conversations %}
+                <div class="history-item">
+                    <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
+                        {{ conv[1] }}
+                    </a>
+                    <div class="d-flex gap-2">
+                        <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" onsubmit="return confirm('Delete this chat?')">
+                            <button class="icon-btn">🗑</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="POST" action="/edit_chat/{{ conv[0] }}">
+                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Enter to rename">
+                </form>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 
-    <div class="mt-auto pt-3 border-top border-secondary">
-        <a href="/logout" class="btn btn-sm btn-outline-danger w-100">Logout</a>
+    <div class="pt-3 border-top border-secondary">
+        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
     </div>
 </nav>
 
 <div class="main-wrapper">
-    <div class="stories-bar" id="storiesBar">
-        <div class="story-item add-story" onclick="document.getElementById('storyInputBtn').click()">+</div>
+    <div class="stories-container" id="storyBar">
+        <div class="add-story-btn" data-bs-toggle="modal" data-bs-target="#storyModal">+</div>
     </div>
 
     <div id="chatBox" class="chat-scroll-area">
@@ -186,21 +220,21 @@
             <div class="user-box">{{ msg.user }}</div>
             <div class="response-box">
                 {% if msg.type == "text" %}
-                    <div class="markdown-body">{{ msg.bot | safe }}</div>
-                {% else %}
-                    <img src="{{ msg.image }}" class="img-fluid rounded">
+                    <div class="msg-content">{{ msg.bot | safe }}</div>
+                {% elif msg.type == "image" %}
+                    <img src="{{ msg.image }}" class="shadow">
                 {% endif %}
             </div>
         {% endfor %}
-        <div id="streamingZone"></div>
+        <div id="streamingContainer"></div>
     </div>
 
     <div class="input-container">
         <form id="chatForm" method="POST" action="/tool" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="file" style="display:none;" accept=".pdf,image/*">
-            <div class="custom-input-group shadow">
-                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-                <input id="chatInput" name="input" placeholder="Ask a question or upload a PDF..." required autocomplete="off">
+            <input type="file" id="fileInput" name="file" style="display:none;" accept="image/*,application/pdf">
+            <div class="custom-input-group shadow-lg">
+                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()">➕</button>
+                <input id="chatInput" name="input" placeholder="Type here or upload a PDF..." required autocomplete="off">
                 <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
                 <button type="submit" class="btn btn-primary px-4">Send</button>
             </div>
@@ -209,16 +243,19 @@
     </div>
 </div>
 
-<button id="storyInputBtn" style="display:none" data-bs-toggle="modal" data-bs-target="#storyModal"></button>
 <div class="modal fade" id="storyModal" tabindex="-1">
     <div class="modal-dialog">
         <form action="/add_story" method="POST" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">New Story</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
-                <textarea name="content" class="form-control bg-transparent text-white mb-2" placeholder="What's happening?"></textarea>
+                <textarea name="content" class="form-control bg-transparent text-white mb-3" placeholder="Tell your story..."></textarea>
                 <input name="media_url" class="form-control bg-transparent text-white" placeholder="Image URL (optional)">
             </div>
-            <div class="modal-footer border-0">
-                <button type="submit" class="btn btn-primary">Post Story</button>
+            <div class="modal-footer border-secondary">
+                <button type="submit" class="btn btn-primary w-100">Post</button>
             </div>
         </form>
     </div>
@@ -227,105 +264,98 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const sidebar = document.getElementById("sidebar");
+    const menuTrigger = document.getElementById("menuTrigger");
     const chatBox = document.getElementById("chatBox");
     const fileInput = document.getElementById("fileInput");
 
-    // --- Sidebar Toggle ---
-    document.getElementById("menuTrigger").onclick = () => {
-        sidebar.classList.toggle("open");
-        document.body.classList.toggle("sidebar-open");
+    // Sidebar Toggle
+    menuTrigger.onclick = () => {
+        sidebar.classList.add("open");
+        document.body.classList.add("sidebar-open");
     };
     function closeSidebar() {
         sidebar.classList.remove("open");
         document.body.classList.remove("sidebar-open");
     }
 
-    // --- Search ---
-    function searchChats() {
-        let filter = document.getElementById('searchBox').value.toLowerCase();
-        document.querySelectorAll('.history-item').forEach(item => {
-            let text = item.querySelector('a').innerText.toLowerCase();
-            item.style.display = text.includes(filter) ? "" : "none";
-        });
-    }
+    // File Upload Status
+    fileInput.onchange = () => {
+        if(fileInput.files[0]) document.getElementById("fileStatus").innerText = "📎 ready: " + fileInput.files[0].name;
+    };
 
-    // --- Rename ---
-    function renameChat(id) {
-        const title = prompt("New title:");
-        if (title) {
-            const f = document.createElement('form');
-            f.method = 'POST'; f.action = `/edit_chat/${id}`;
-            const i = document.createElement('input');
-            i.name = 'title'; i.value = title;
-            f.appendChild(i); document.body.appendChild(f); f.submit();
-        }
-    }
+    // Auto Scroll
+    const scrollToBottom = () => chatBox.scrollTop = chatBox.scrollHeight;
+    window.onload = scrollToBottom;
 
-    // --- Instant Delete (No Page Reload) ---
-    async function deleteHistory(id) {
-        if (!confirm("Delete chat?")) return;
-        const res = await fetch(`/delete_chat/${id}`, { method: 'POST' });
-        if (res.ok) {
-            document.getElementById(`conv-${id}`).remove();
-            if (window.location.pathname.includes(`/chat/${id}`)) window.location.href = "/";
-        }
-    }
-
-    // --- Load Stories ---
+    // Fetch Stories
     async function loadStories() {
         const res = await fetch('/stories');
         const data = await res.json();
-        const bar = document.getElementById('storiesBar');
+        const bar = document.getElementById('storyBar');
         data.forEach(s => {
-            const d = document.createElement('div');
-            d.className = 'story-item';
-            d.innerHTML = `<img src="${s.media || 'https://ui-avatars.com/api/?name='+s.user}">`;
-            d.onclick = () => alert(s.user + ": " + s.content);
-            bar.appendChild(d);
+            const div = document.createElement('div');
+            div.className = 'story-circle';
+            div.innerHTML = `<img src="${s.media || 'https://ui-avatars.com/api/?name='+s.user}" title="${s.user}">`;
+            div.onclick = () => {
+                alert(`${s.user}: ${s.content}`);
+                fetch(`/view_story/${s.id}`);
+            };
+            bar.appendChild(div);
         });
     }
     loadStories();
 
-    // --- Voice ---
-    const micBtn = document.getElementById("micBtn");
-    micBtn.onclick = () => {
-        const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!Rec) return;
-        const speech = new Rec();
-        speech.start();
-        micBtn.style.color = "red";
-        speech.onresult = (e) => document.getElementById("chatInput").value = e.results[0][0].transcript;
-        speech.onend = () => micBtn.style.color = "#94a3b8";
-    };
-
-    // --- Streaming logic for PDF/Large Text ---
+    // Streaming Handle
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('do_stream') === 'true') {
-        const zone = document.getElementById('streamingZone');
-        const botDiv = document.createElement('div');
-        botDiv.className = 'response-box';
-        botDiv.innerHTML = '<div id="streamTarget"></div><span class="cursor"></span>';
-        zone.appendChild(botDiv);
+        const container = document.getElementById('streamingContainer');
+        const rBox = document.createElement('div');
+        rBox.className = 'response-box';
+        rBox.innerHTML = '<div id="streamTarget"></div><span class="cursor"></span>';
+        container.appendChild(rBox);
+        scrollToBottom();
 
-        const target = document.getElementById('streamTarget');
+        const streamTarget = document.getElementById('streamTarget');
         const eventSource = new EventSource("/stream");
-        let full = "";
+        let fullText = "";
 
         eventSource.onmessage = (e) => {
             if (e.data === "[DONE]") {
                 eventSource.close();
-                setTimeout(() => location.href = location.pathname, 800);
+                document.querySelector(".cursor").remove();
+                // Refresh to finalize Markdown and clean URL
+                setTimeout(() => location.href = location.pathname, 1000);
                 return;
             }
             const data = JSON.parse(e.data);
-            full += data.chunk;
-            target.innerHTML = marked.parse(full);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            fullText += data.chunk;
+            streamTarget.innerHTML = marked.parse(fullText); // Markdown parsing!
+            scrollToBottom();
         };
+        eventSource.onerror = () => eventSource.close();
     }
 
-    fileInput.onchange = () => { if(fileInput.files[0]) document.getElementById("fileStatus").innerText = "📎 " + fileInput.files[0].name; };
-    window.onload = () => chatBox.scrollTop = chatBox.scrollHeight;
+    // Voice to Text
+    const micBtn = document.getElementById("micBtn");
+    micBtn.onclick = () => {
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Speech) return alert("Browser does not support Speech Recognition");
+        
+        const rec = new Speech();
+        rec.start();
+        micBtn.style.color = "red";
+        rec.onresult = (e) => {
+            document.getElementById("chatInput").value = e.results[0][0].transcript;
+        };
+        rec.onend = () => micBtn.style.color = "#94a3b8";
+    };
+
+    // Rename Logic
+    function enableRename(id) {
+        const input = document.getElementById("rename-" + id);
+        input.style.display = input.style.display === "none" ? "block" : "none";
+        input.focus();
+    }
 </script>
 
 </body>

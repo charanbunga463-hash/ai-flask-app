@@ -13,7 +13,6 @@ body{
     background:#0f172a;
     color:#e2e8f0;
     font-family:'Segoe UI',sans-serif;
-    margin:0;
 }
 
 /* ICON */
@@ -38,7 +37,7 @@ body{
     position:fixed;
     left:-280px;
     top:0;
-    transition:0.3s;
+    transition:.3s;
     z-index:1000;
     padding:15px;
     overflow-y:auto;
@@ -80,7 +79,6 @@ body{
     text-align:right;
     margin-top:10px;
 }
-
 .response-box{
     background:#020617;
     padding:15px;
@@ -94,10 +92,6 @@ body{
     background:#0f172a;
     border:1px solid #334155;
     color:white;
-}
-
-.btn-ai{
-    background:linear-gradient(135deg,#6366f1,#8b5cf6);
 }
 
 /* HISTORY */
@@ -114,6 +108,11 @@ body{
 .chat-title{ flex:1; }
 .rename-input{ display:none; flex:1; }
 
+/* SEARCH */
+.search-box{
+    margin-bottom:10px;
+}
+
 /* FILE MENU */
 .file-menu{
     position:absolute;
@@ -125,15 +124,13 @@ body{
     padding:5px;
     display:flex;
     flex-direction:column;
-    z-index:999;
 }
 .file-menu button{
     background:none;
     border:none;
     color:white;
-    padding:8px 12px;
+    padding:8px;
     text-align:left;
-    cursor:pointer;
 }
 .file-menu button:hover{
     background:#334155;
@@ -149,47 +146,54 @@ body{
 
 <body>
 
-<!-- MAIN ICON -->
 <div id="mainIcon" class="main-icon">🤖</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
 
-    <div class="d-flex justify-content-between mb-3">
-        <h5>🕘 Chats</h5>
-        <button class="btn btn-sm btn-outline-light" id="closeBtn">📜</button>
+    <div class="d-flex justify-content-between mb-2">
+        <h5>Chats</h5>
+        <button class="btn btn-sm btn-outline-light" id="closeBtn">✖</button>
     </div>
 
-    <a href="/new_chat" class="btn btn-sm btn-primary w-100 mb-3">+ New Chat</a>
+    <!-- SEARCH -->
+    <input type="text" id="searchBox" class="form-control search-box" placeholder="Search chats...">
 
-    {% for conv in conversations %}
-    <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
-        <div class="chat-title" id="title-{{ conv[0] }}">
-            <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;">
-                {{ conv[1] }}
-            </a>
+    <div id="chatList">
+        {% for conv in conversations %}
+        <div class="history-box {% if conv[0] == active_chat %}active{% endif %}">
+            
+            <div class="chat-title" id="title-{{ conv[0] }}">
+                <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;">
+                    {{ conv[1] }}
+                </a>
+            </div>
+
+            <input type="text"
+                id="input-{{ conv[0] }}"
+                class="form-control form-control-sm rename-input"
+                value="{{ conv[1] }}"
+                onkeydown="handleRename(event,'{{ conv[0] }}')">
+
+            <div class="dropdown ms-2">
+                <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><button class="dropdown-item"
+                        onclick="enableRename('{{ conv[0] }}')">Rename</button></li>
+                    <li>
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}">
+                            <button class="dropdown-item text-danger">Delete</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
         </div>
-
-        <input type="text"
-               id="input-{{ conv[0] }}"
-               class="form-control form-control-sm rename-input"
-               value="{{ conv[1] }}"
-               onkeydown="handleRename(event,'{{ conv[0] }}')">
-
-        <div class="dropdown ms-2">
-            <button class="btn btn-sm text-white" data-bs-toggle="dropdown">⋯</button>
-            <ul class="dropdown-menu dropdown-menu-dark">
-                <li><button class="dropdown-item"
-                    onclick="enableRename('{{ conv[0] }}')">Rename</button></li>
-                <li>
-                    <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                        <button class="dropdown-item text-danger">Delete</button>
-                    </form>
-                </li>
-            </ul>
-        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+
+    <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
+
 </div>
 
 <!-- CHAT -->
@@ -202,51 +206,43 @@ body{
 
     <div class="messages" id="chatBox">
         {% for msg in chat %}
-        <div class="user-box">{{ msg.user }}</div>
+            <div class="user-box">{{ msg.user }}</div>
 
-        {% if msg.type == "text" %}
-        <div class="response-box">{{ msg.bot | safe }}</div>
-        {% endif %}
+            {% if msg.type == "text" %}
+                <div class="response-box">{{ msg.bot | safe }}</div>
+            {% endif %}
 
-        {% if msg.type == "image" %}
-        <div class="response-box text-center">
-            <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
-        </div>
-        {% endif %}
+            {% if msg.type == "image" %}
+                <div class="response-box text-center">
+                    <img src="{{ msg.image }}" style="max-width:100%; border-radius:10px;">
+                </div>
+            {% endif %}
         {% endfor %}
     </div>
 
-    <!-- INPUT -->
     <div class="input-area">
         <form method="POST" action="/tool" enctype="multipart/form-data">
-            <div class="input-group align-items-center">
+            <div class="input-group">
 
-                <!-- ➕ BUTTON -->
-                <div class="position-relative">
-                    <button type="button" class="btn btn-outline-light" onclick="toggleMenu()">➕</button>
+                <button type="button" class="btn btn-outline-light" onclick="toggleMenu()">➕</button>
 
-                    <div id="fileMenu" class="file-menu d-none">
-                        <button type="button" onclick="openFile()">📄 Upload File</button>
-                        <button type="button" onclick="openImage()">🖼 Upload Image</button>
-                    </div>
-                </div>
-
-                <!-- HIDDEN INPUT -->
                 <input type="file" id="fileInput" name="file" class="d-none">
 
-                <!-- TEXT -->
                 <input class="form-control input-box"
                        id="chatInput"
                        name="input"
                        placeholder="Ask anything...">
 
-                <!-- MIC -->
                 <button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
-
-                <button class="btn btn-ai text-white">Send</button>
+                <button class="btn btn-primary">Send</button>
 
             </div>
         </form>
+
+        <div id="fileMenu" class="file-menu d-none">
+            <button onclick="openFile()">📄 Upload File</button>
+            <button onclick="openImage()">🖼 Upload Image</button>
+        </div>
     </div>
 
 </div>
@@ -256,70 +252,68 @@ body{
 <script>
 
 // SIDEBAR
-const mainIcon=document.getElementById("mainIcon");
-const sidebar=document.getElementById("sidebar");
-const closeBtn=document.getElementById("closeBtn");
-let isOpen=false;
+const sidebar = document.getElementById("sidebar");
+document.getElementById("mainIcon").onclick = () => sidebar.classList.add("open");
+document.getElementById("closeBtn").onclick = () => sidebar.classList.remove("open");
 
-mainIcon.onclick=()=>{
-    isOpen=true;
-    sidebar.classList.add("open");
-};
-closeBtn.onclick=()=>{
-    isOpen=false;
-    sidebar.classList.remove("open");
+// AUTO SCROLL
+window.onload = () => {
+    let box = document.getElementById("chatBox");
+    if(box) box.scrollTop = box.scrollHeight;
 };
 
-// SCROLL
-window.onload=()=>{
-    let box=document.getElementById("chatBox");
-    if(box) box.scrollTop=box.scrollHeight;
-};
+// SEARCH FILTER (frontend only)
+document.getElementById("searchBox").addEventListener("input", function(){
+    let q = this.value.toLowerCase();
+    document.querySelectorAll(".history-box").forEach(box => {
+        let text = box.innerText.toLowerCase();
+        box.style.display = text.includes(q) ? "flex" : "none";
+    });
+});
 
 // FILE MENU
 function toggleMenu(){
     document.getElementById("fileMenu").classList.toggle("d-none");
 }
 function openFile(){
-    let f=document.getElementById("fileInput");
-    f.accept=".pdf";
+    let f = document.getElementById("fileInput");
+    f.accept = ".pdf";
     f.click();
 }
 function openImage(){
-    let f=document.getElementById("fileInput");
-    f.accept="image/*";
+    let f = document.getElementById("fileInput");
+    f.accept = "image/*";
     f.click();
 }
 
 // VOICE
-let recognition,isListening=false;
-const micBtn=document.getElementById("micBtn");
+let recognition, isListening=false;
+const micBtn = document.getElementById("micBtn");
 
-micBtn.onclick=()=>{
+micBtn.onclick = () => {
     if(!('webkitSpeechRecognition' in window)){
         alert("Voice not supported");
         return;
     }
+
     if(isListening){
         recognition.stop();
-        micBtn.classList.remove("mic-active");
-        isListening=false;
         return;
     }
-    recognition=new webkitSpeechRecognition();
-    recognition.lang="en-US";
+
+    recognition = new webkitSpeechRecognition();
     recognition.start();
 
     micBtn.classList.add("mic-active");
-    isListening=true;
+    isListening = true;
 
-    recognition.onresult=e=>{
-        chatInput.value=e.results[0][0].transcript;
+    recognition.onresult = e => {
+        chatInput.value = e.results[0][0].transcript;
     };
 
-    recognition.onend=()=>{
+    recognition.onend = () => {
         micBtn.classList.remove("mic-active");
-        isListening=false;
+        isListening = false;
     };
 };
 

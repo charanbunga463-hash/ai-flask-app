@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, jsonify
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -6,7 +6,7 @@ import markdown
 from openai import OpenAI
 from PyPDF2 import PdfReader
 
-# ---------------- ENV ----------------
+# ---------- ENV ----------
 load_dotenv()
 
 app = Flask(__name__)
@@ -15,7 +15,7 @@ app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "users.db")
 
-# ---------------- AI ----------------
+# ---------- AI ----------
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
@@ -45,17 +45,18 @@ def generate_chat_title(message):
             ],
             max_tokens=20
         )
-        title = res.choices[0].message.content.strip()
-        return title if title else message[:30]
+        return res.choices[0].message.content.strip()
     except:
         return message[:30]
 
 def generate_image(prompt):
     return f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}"
 
-# ---------------- DB ----------------
+# ---------- DB ----------
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
     conn = get_db()
@@ -92,7 +93,7 @@ def init_db():
 
 init_db()
 
-# ---------------- HOME ----------------
+# ---------- HOME ----------
 @app.route("/")
 def home():
     if "user" not in session:
@@ -110,18 +111,17 @@ def home():
     conn.close()
 
     return render_template("dashboard.html",
-                           user=session["user"],
                            chat=[],
                            conversations=conversations,
                            active_chat=None)
 
-# ---------------- NEW CHAT ----------------
+# ---------- NEW CHAT ----------
 @app.route("/new_chat")
 def new_chat():
     session.pop("conv_id", None)
     return redirect("/")
 
-# ---------------- OPEN CHAT ----------------
+# ---------- OPEN CHAT ----------
 @app.route("/chat/<int:conv_id>")
 def open_chat(conv_id):
     if "user" not in session:
@@ -130,47 +130,71 @@ def open_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
-    # validate ownership
     c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
               (conv_id, session["user"]))
     if not c.fetchone():
-        conn.close()
         return redirect("/")
 
     session["conv_id"] = conv_id
 
-    # fetch chats
     c.execute("""
-        SELECT user_msg, bot_msg, type 
-        FROM chats 
-        WHERE conversation_id=? 
+        SELECT user_msg, bot_msg, type
+        FROM chats
+        WHERE conversation_id=?
         ORDER BY id
     """, (conv_id,))
     rows = c.fetchall()
 
-    # fetch sidebar chats
     c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
 
     conn.close()
 
-    chat = []
-    for r in rows:
-        chat.append({
-            "type": r[2],
-            "user": r[0],
-            "bot": r[1] if r[2] == "text" else None,
-            "image": r[1] if r[2] == "image" else None
-        })
+    chat = [{
+        "type": r["type"],
+        "user": r["user_msg"],
+        "bot": r["bot_msg"] if r["type"] == "text" else None,
+        "image": r["bot_msg"] if r["type"] == "image" else None
+    } for r in rows]
 
     return render_template("dashboard.html",
-                           user=session["user"],
                            chat=chat,
                            conversations=conversations,
                            active_chat=conv_id)
 
-# ---------------- DELETE CHAT ----------------
+# ---------- SEARCH CHAT (NEW FEATURE) ----------
+@app.route("/search")
+def search():
+    if "user" not in session:
+        return jsonify({"results": []})
+
+    q = request.args.get("q", "")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT user_msg, bot_msg, type
+        FROM chats
+        WHERE username=?
+        AND (user_msg LIKE ? OR bot_msg LIKE ?)
+        ORDER BY id DESC
+        LIMIT 20
+    """, (session["user"], f"%{q}%", f"%{q}%"))
+
+    rows = c.fetchall()
+    conn.close()
+
+    results = [{
+        "user": r["user_msg"],
+        "bot": r["bot_msg"],
+        "type": r["type"]
+    } for r in rows]
+
+    return jsonify({"results": results})
+
+# ---------- DELETE ----------
 @app.route("/delete_chat/<int:conv_id>", methods=["POST"])
 def delete_chat(conv_id):
     if "user" not in session:
@@ -189,13 +213,9 @@ def delete_chat(conv_id):
 
     conn.close()
 
-    if next_chat:
-        return redirect(f"/chat/{next_chat[0]}")
-    else:
-        session.pop("conv_id", None)
-        return redirect("/")
+    return redirect(f"/chat/{next_chat['id']}") if next_chat else redirect("/")
 
-# ---------------- EDIT CHAT ----------------
+# ---------- RENAME ----------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
 def edit_chat(conv_id):
     if "user" not in session:
@@ -214,7 +234,7 @@ def edit_chat(conv_id):
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- TOOL (TEXT + FILE) ----------------
+# ---------- TOOL ----------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -241,23 +261,19 @@ def tool():
 
     extracted_text = ""
 
-    # -------- PDF --------
+    # PDF
     if file and file.filename.endswith(".pdf"):
-        try:
-            reader = PdfReader(file)
-            for page in reader.pages:
-                extracted_text += page.extract_text() or ""
-        except:
-            extracted_text = "Could not read PDF."
+        reader = PdfReader(file)
+        for page in reader.pages:
+            extracted_text += page.extract_text() or ""
 
-    # -------- IMAGE --------
+    # Image
     elif file and file.mimetype.startswith("image"):
         extracted_text = f"User uploaded image ({file.filename}). Describe it."
 
-    # combine prompt
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    # -------- IMAGE GENERATION --------
+    # Image generation
     if user_input and any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]) and not file:
         img = generate_image(user_input)
 
@@ -270,21 +286,21 @@ def tool():
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # -------- TEXT RESPONSE --------
+    # Text response
     result = query_ai(final_prompt)
     formatted = markdown.markdown(result)
 
     c.execute("""
         INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
         VALUES (?, ?, ?, ?, ?)
-    """, (conv_id, session["user"], user_input or (file.filename if file else ""), formatted, "text"))
+    """, (conv_id, session["user"], user_input, formatted, "text"))
 
     conn.commit()
     conn.close()
 
     return redirect(f"/chat/{conv_id}")
 
-# ---------------- AUTH ----------------
+# ---------- AUTH ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -300,9 +316,8 @@ def login():
         data = c.fetchone()
         conn.close()
 
-        if data and pwd == data[0]:
+        if data and pwd == data["password"]:
             session["user"] = user
-            session.pop("conv_id", None)
             return redirect("/")
         else:
             error = "Invalid credentials"
@@ -320,13 +335,10 @@ def register():
         try:
             conn = get_db()
             c = conn.cursor()
-
             c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
             conn.commit()
             conn.close()
-
             return redirect("/login")
-
         except sqlite3.IntegrityError:
             error = "Username exists"
 
@@ -337,6 +349,6 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ---------------- RUN ----------------
+# ---------- RUN ----------
 if __name__ == "__main__":
     app.run(debug=True)

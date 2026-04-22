@@ -1,348 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Tool</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI | Intelligent Interface</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-surface: #1e293b;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --sidebar-width: 320px;
+        }
 
-<style>
-body{
-    background:#0f172a;
-     color:#e2e8f0;
- font-family:'Segoe UI',sans-serif;
-     margin:0;
-}
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
 
-/* ICON */
-.main-icon{
-    position:fixed;
-    top:10px;
-    left:10px;
-    background:#1e293b;
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    z-index:1100;
-}
+        /* --- Global UI Elements --- */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+        }
 
-/* SIDEBAR */
-.sidebar{
-    width:300px;
-    background:#0f172a;
-    border-right:1px solid #334155;
-    height:100vh;
-    position:fixed;
-    left:-300px;
-    transition:0.3s;
-    padding:15px;
-    display:flex;
-    flex-direction:column;
-    z-index:1000;
-}
-.sidebar.open{ left:0; }
+        .main-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
 
-.sidebar-content{
-    flex:1;
-    overflow-y:auto;
-}
+        .main-toggle:hover { transform: scale(1.05); }
 
-/* CHAT */
-.chat-area{
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    margin-left:0;
-    transition:0.3s;
-}
+        /* --- Sidebar --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-deep);
+            border-right: 1px solid var(--border-color);
+            height: 100vh;
+            position: fixed;
+            left: calc(-1 * var(--sidebar-width));
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+        }
 
-body.sidebar-open .chat-area{
-    margin-left:300px;
-}
+        .sidebar.open { left: 0; }
 
-.input-area{
-    padding:15px;
-    border-top:1px solid #334155;
-    background:#1e293b;
-    transition:0.3s;
-}
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
 
-body.sidebar-open .input-area{
-    margin-left:300px;
-}
+        .history-item {
+            position: relative;
+            background: transparent;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-/* MESSAGES */
-.messages{
-    flex:1;
-    overflow-y:auto;
-    padding:20px;
-}
+        .history-item:hover { background: var(--bg-surface); }
+        .history-link { color: var(--text-main); text-decoration: none; flex: 1; font-size: 0.95rem; }
 
-.user-box{
-    background:#1e40af;
-    padding:10px;
-    border-radius:10px;
-    text-align:right;
-    margin-top:10px;
-}
+        .action-group { opacity: 0; transition: opacity 0.2s; }
+        .history-item:hover .action-group { opacity: 1; }
 
-.response-box{
-    background:#020617;
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
-    border:1px solid #334155;
-}
+        /* --- Chat Area --- */
+        .main-wrapper {
+            margin-left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.35s ease;
+        }
 
-/* SEARCH */
-.search-box{ margin-top:10px; }
+        body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
-.history-box{
-    background:#1e293b;
-    padding:10px;
-    border-radius:10px;
-    margin-bottom:8px;
-    cursor:pointer;
-}
-.history-box:hover{ background:#334155; }
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 80px 20% 40px 20%; /* Centered container look */
+        }
 
-/* HEADER */
-.sidebar-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+        @media (max-width: 992px) { .chat-container { padding: 80px 5% 40px 5%; } }
 
-/* FOOTER */
-.sidebar-footer{
-    border-top:1px solid #334155;
-    padding-top:10px;
-}
+        .msg-row { margin-bottom: 25px; display: flex; flex-direction: column; }
+        
+        .msg-user {
+            align-self: flex-end;
+            background: var(--accent-primary);
+            padding: 12px 18px;
+            border-radius: 18px 18px 2px 18px;
+            max-width: 80%;
+            font-weight: 500;
+        }
 
-/* HIGHLIGHT */
-.highlight{
-    background:yellow;
-    color:black;
-    padding:2px;
-    border-radius:3px;
-}
+        .msg-bot {
+            align-self: flex-start;
+            background: var(--bg-surface);
+            padding: 20px;
+            border-radius: 2px 18px 18px 18px;
+            border: 1px solid var(--border-color);
+            max-width: 85%;
+            line-height: 1.6;
+        }
 
-/* BUTTON */
-.icon-btn{
-    background:none;
-    border:none;
-    color:white;
-    font-size:18px;
-}
-</style>
+        /* --- Input Dock --- */
+        .input-dock {
+            padding: 20px 0;
+            background: linear-gradient(transparent, var(--bg-deep) 30%);
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-field {
+            background: transparent;
+            border: none;
+            color: white;
+            box-shadow: none !important;
+        }
+
+        .chat-field:focus { background: transparent; color: white; }
+
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .highlight { background: rgba(59, 130, 246, 0.4); color: white; border-radius: 2px; }
+    </style>
 </head>
 
-<body>
+<body class="sidebar-open"> <button id="mainIcon" class="main-toggle">
+    <i class="bi bi-layout-sidebar-inset"></i>
+</button>
 
-<div id="mainIcon" class="main-icon">🤖</div>
+<aside id="sidebar" class="sidebar open">
+    <div class="sidebar-header d-flex justify-content-between align-items-center">
+        <h5 class="m-0 fw-bold"><i class="bi bi-cpu me-2"></i>Nexus AI</h5>
+        <button class="btn text-white p-0" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+    </div>
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+        <a href="/new_chat" class="btn btn-primary w-100 mb-3 shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>New Session
+        </a>
 
-    <div class="sidebar-header">
-        <h5>Chats</h5>
-        <button class="icon-btn" onclick="closeSidebar()">✖</button>
-    </div>
+        <div class="mb-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                <input id="searchBox" class="form-control bg-dark border-secondary text-white" placeholder="Search memory...">
+            </div>
+        </div>
 
-    <div class="sidebar-content">
+        <div id="searchResults"></div>
 
-        <a href="/new_chat" class="btn btn-primary w-100 mt-2">+ New Chat</a>
+        <div id="chatHistory">
+            <label class="text-uppercase small text-muted fw-bold mb-2">Recent Chats</label>
+            {% for conv in conversations %}
+            <div class="history-item">
+                <a href="/chat/{{ conv[0] }}" class="history-link text-truncate">
+                    {{ conv[1] }}
+                </a>
+                <div class="action-group">
+                    <button class="btn btn-sm text-muted p-1" onclick="enableRename('{{ conv[0] }}')"><i class="bi bi-pencil-square"></i></button>
+                    <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline">
+                        <button class="btn btn-sm text-danger p-1"><i class="bi bi-trash3"></i></button>
+                    </form>
+                </div>
+            </div>
+            <input id="rename-{{ conv[0] }}" class="form-control form-control-sm mb-2 bg-dark text-white border-primary" 
+                   style="display:none;" onkeydown="handleRename(event,'{{ conv[0] }}')">
+            {% endfor %}
+        </div>
+    </div>
 
-        <input id="searchBox" class="form-control search-box" placeholder="Search messages...">
+    <div class="p-3 border-top border-secondary">
+        <a href="/logout" class="btn btn-sm btn-outline-danger w-100">Sign Out</a>
+    </div>
+</aside>
 
-        <div id="searchResults"></div>
+<main class="main-wrapper">
+    <div id="chatBox" class="chat-container">
+        {% for msg in chat %}
+            <div class="msg-row">
+                <div class="msg-user">{{ msg.user }}</div>
+            </div>
+            
+            <div class="msg-row">
+                <div class="msg-bot shadow-sm">
+                    {% if msg.type == "text" %}
+                        {{ msg.bot | safe }}
+                    {% elif msg.type == "image" %}
+                        <img src="{{ msg.image }}" class="rounded img-fluid border border-secondary mt-2">
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 
-        <div id="chatHistory">
-        {% for conv in conversations %}
-            <div class="history-box">
+    <footer class="input-dock">
+        <div class="container-fluid px-4">
+            <form method="POST" action="/tool" enctype="multipart/form-data" id="chatForm">
+                <div class="input-container shadow-lg">
+                    <button type="button" class="btn btn-circle text-muted" title="Upload File">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    
+                    <input class="form-control chat-field" id="chatInput" name="input" 
+                           placeholder="Describe your request..." autocomplete="off">
 
-                <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;flex:1;">
-                    {{ conv[1] }}
-                </a>
+                    <button type="button" id="micBtn" class="btn btn-circle text-muted" title="Voice Input">
+                        <i class="bi bi-mic"></i>
+                    </button>
 
-                <!-- DELETE -->
-                <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                    <button class="icon-btn">🗑</button>
-                </form>
-
-                <!-- RENAME -->
-                <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
-            </div>
-
-            <input id="rename-{{ conv[0] }}"
-                   class="form-control form-control-sm"
-                   style="display:none;"
-                   onkeydown="handleRename(event,'{{ conv[0] }}')">
-        {% endfor %}
-        </div>
-
-    </div>
-
-    <div class="sidebar-footer">
-        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
-    </div>
-
-</div>
-
-<!-- CHAT -->
-<div class="chat-area">
-
-<div id="chatBox" class="messages">
-
-{% for msg in chat %}
-
-<div class="user-box">{{ msg.user }}</div>
-
-{% if msg.type == "text" %}
-<div class="response-box">
-    {{ msg.bot | safe }}
-</div>
-{% endif %}
-
-{% if msg.type == "image" %}
-<div class="response-box text-center">
-    <img src="{{ msg.image }}" style="max-width:100%;">
-</div>
-{% endif %}
-
-{% endfor %}
-
-</div>
-
-<!-- INPUT -->
-<div class="input-area">
-<form method="POST" action="/tool" enctype="multipart/form-data">
-
-<div class="input-group">
-
-<button type="button" class="btn btn-outline-light">➕</button>
-
-<input class="form-control" id="chatInput" name="input" placeholder="Ask anything...">
-
-<!-- MIC -->
-<button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
-
-<button class="btn btn-primary">Send</button>
-
-</div>
-
-</form>
-</div>
-
-</div>
+                    <button class="btn btn-primary btn-circle px-4" style="width: auto;">
+                        <i class="bi bi-send-fill me-2"></i>Send
+                    </button>
+                </div>
+            </form>
+            <p class="text-center small text-muted mt-2">Nexus AI may produce inaccurate information.</p>
+        </div>
+    </footer>
+</main>
 
 <script>
+    const sidebar = document.getElementById("sidebar");
+    const body = document.body;
+    const searchBox = document.getElementById("searchBox");
+    const searchResults = document.getElementById("searchResults");
+    const chatHistory = document.getElementById("chatHistory");
 
-const sidebar=document.getElementById("sidebar");
+    // Toggle Sidebar Functionality
+    function toggleSidebar() {
+        sidebar.classList.toggle("open");
+        body.classList.toggle("sidebar-open");
+    }
 
-/* OPEN SIDEBAR */
-document.getElementById("mainIcon").onclick=()=>{
-    sidebar.classList.add("open");
-    document.body.classList.add("sidebar-open");
-};
+    document.getElementById("mainIcon").onclick = toggleSidebar;
 
-/* CLOSE SIDEBAR */
-function closeSidebar(){
-    sidebar.classList.remove("open");
-    document.body.classList.remove("sidebar-open");
-}
+    // Intelligent Search
+    searchBox.oninput = async () => {
+        let q = searchBox.value.trim();
+        if(q.length < 2) {
+            searchResults.innerHTML = "";
+            chatHistory.classList.remove("d-none");
+            return;
+        }
 
-/* SEARCH SAFE FIX */
-searchBox.oninput=async ()=>{
-    let q=searchBox.value.trim();
+        chatHistory.classList.add("d-none");
+        try {
+            let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+            let data = await res.json();
+            
+            let html = '<label class="text-uppercase small text-primary fw-bold mb-2">Search Results</label>';
+            data.results.forEach(r => {
+                let snippet = r.snippet.replace(new RegExp(`(${q})`, "gi"), `<span class="highlight">$1</span>`);
+                html += `
+                    <div class="history-item cursor-pointer" onclick="openChat(${r.conv_id},${r.msg_id},'${q}')">
+                        <div class="small text-truncate text-muted-50">${snippet}</div>
+                    </div>`;
+            });
+            searchResults.innerHTML = html;
+        } catch (err) { console.error("Search failed", err); }
+    };
 
-    if(q.length<2){
-        searchResults.innerHTML="";
-        chatHistory.style.display="block";
-        return;
-    }
+    function openChat(c, m, q) {
+        window.location.href = `/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
+    }
 
-    chatHistory.style.display="none";
+    // Rename logic
+    function enableRename(id) {
+        const el = document.getElementById("rename-" + id);
+        el.style.display = "block";
+        el.focus();
+    }
 
-    let res=await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data=await res.json();
+    function handleRename(e, id) {
+        if(e.key === "Enter") {
+            const val = e.target.value;
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/edit_chat/" + id;
+            const i = document.createElement("input");
+            i.name = "title";
+            i.value = val;
+            form.appendChild(i);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
 
-    let html="";
+    // Modern Web Speech API
+    let recognition;
+    let isListening = false;
+    const micBtn = document.getElementById("micBtn");
 
-    data.results.forEach(r=>{
-        let text=r.snippet.replace(
-            new RegExp(`(${q})`,"gi"),
-            `<span class="highlight">$1</span>`
-        );
+    micBtn.onclick = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support voice input.");
+            return;
+        }
 
-        html+=`
-        <div class="history-box"
-             onclick='openChat(${r.conv_id},${r.msg_id},${JSON.stringify(q)})'>
-            ${text}
-        </div>`;
-    });
+        if (isListening) {
+            recognition.stop();
+            return;
+        }
 
-    searchResults.innerHTML=html;
-};
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
-function openChat(c,m,q){
-    window.location.href=`/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
-}
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add("text-danger");
+            micBtn.innerHTML = '<i class="bi bi-record-fill"></i>';
+        };
 
-/* RENAME */
-function enableRename(id){
-    document.getElementById("rename-"+id).style.display="block";
-}
+        recognition.onresult = (e) => {
+            document.getElementById("chatInput").value = e.results[0][0].transcript;
+        };
 
-function handleRename(e,id){
-    if(e.key==="Enter"){
-        let val=e.target.value;
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove("text-danger");
+            micBtn.innerHTML = '<i class="bi bi-mic"></i>';
+        };
 
-        let form=document.createElement("form");
-        form.method="POST";
-        form.action="/edit_chat/"+id;
+        recognition.start();
+    };
 
-        let i=document.createElement("input");
-        i.name="title";
-        i.value=val;
-
-        form.appendChild(i);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-/* MIC FIXED */
-let recognition;
-let isListening=false;
-const micBtn=document.getElementById("micBtn");
-
-micBtn.onclick=()=>{
-    if(!('webkitSpeechRecognition' in window)){
-        alert("Not supported");
-        return;
-    }
-
-    if(isListening){
-        recognition.stop();
-        return;
-    }
-
-    recognition=new webkitSpeechRecognition();
-    recognition.start();
-
-    isListening=true;
-
-    recognition.onresult=(e)=>{
-        chatInput.value=e.results[0][0].transcript;
-    };
-
-    recognition.onend=()=>{
-        isListening=false;
-    };
-};
-
+    // Auto-scroll chat to bottom
+    const chatBox = document.getElementById("chatBox");
+    chatBox.scrollTop = chatBox.scrollHeight;
 </script>
 
 </body>

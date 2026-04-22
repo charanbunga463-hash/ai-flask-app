@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, redirect, session, jsonify
-import sqlite3
+import psycopg2
 import os
 from dotenv import load_dotenv
 import markdown
@@ -12,8 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "users.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ---------- AI ----------
 client = OpenAI(
@@ -54,8 +53,7 @@ def generate_image(prompt):
 
 # ---------- DB ----------
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 def init_db():
@@ -64,14 +62,14 @@ def init_db():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
         password TEXT
     )""")
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS conversations(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT,
         title TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -79,7 +77,7 @@ def init_db():
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS chats(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         conversation_id INTEGER,
         username TEXT,
         user_msg TEXT,
@@ -104,7 +102,7 @@ def home():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+    c.execute("SELECT id, title FROM conversations WHERE username=%s ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
 
@@ -130,7 +128,7 @@ def open_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT id FROM conversations WHERE id=? AND username=?",
+    c.execute("SELECT id FROM conversations WHERE id=%s AND username=%s",
               (conv_id, session["user"]))
     if not c.fetchone():
         return redirect("/")
@@ -140,22 +138,22 @@ def open_chat(conv_id):
     c.execute("""
         SELECT user_msg, bot_msg, type
         FROM chats
-        WHERE conversation_id=?
+        WHERE conversation_id=%s
         ORDER BY id
     """, (conv_id,))
     rows = c.fetchall()
 
-    c.execute("SELECT id, title FROM conversations WHERE username=? ORDER BY id DESC",
+    c.execute("SELECT id, title FROM conversations WHERE username=%s ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
 
     conn.close()
 
     chat = [{
-        "type": r["type"],
-        "user": r["user_msg"],
-        "bot": r["bot_msg"] if r["type"] == "text" else None,
-        "image": r["bot_msg"] if r["type"] == "image" else None
+        "type": r[2],
+        "user": r[0],
+        "bot": r[1] if r[2] == "text" else None,
+        "image": r[1] if r[2] == "image" else None
     } for r in rows]
 
     return render_template("dashboard.html",
@@ -163,7 +161,7 @@ def open_chat(conv_id):
                            conversations=conversations,
                            active_chat=conv_id)
 
-# ---------- SEARCH CHAT (NEW FEATURE) ----------
+# ---------- SEARCH CHAT ----------
 @app.route("/search")
 def search():
     if "user" not in session:
@@ -175,14 +173,13 @@ def search():
         return {"results": []}
 
     conn = get_db()
-    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("""
         SELECT id, conversation_id, user_msg, bot_msg
         FROM chats
-        WHERE username = ?
-        AND (user_msg LIKE ? OR bot_msg LIKE ?)
+        WHERE username=%s
+        AND (user_msg ILIKE %s OR bot_msg ILIKE %s)
         ORDER BY id DESC
         LIMIT 30
     """, (session["user"], f"%{q}%", f"%{q}%"))
@@ -193,22 +190,16 @@ def search():
     results = []
 
     for r in rows:
-        user_msg = r["user_msg"] or ""
-        bot_msg = r["bot_msg"] or ""
-
-        full_text = user_msg + " " + bot_msg
-
-        # find match position for snippet
+        full_text = (r[2] or "") + " " + (r[3] or "")
         idx = full_text.lower().find(q.lower())
-
         if idx == -1:
             idx = 0
 
         snippet = full_text[max(0, idx - 40): idx + 40]
 
         results.append({
-            "conv_id": r["conversation_id"],
-            "msg_id": r["id"],     # ⭐ REQUIRED for jump
+            "conv_id": r[1],
+            "msg_id": r[0],
             "snippet": snippet
         })
 
@@ -223,17 +214,17 @@ def delete_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("DELETE FROM chats WHERE conversation_id=?", (conv_id,))
-    c.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+    c.execute("DELETE FROM chats WHERE conversation_id=%s", (conv_id,))
+    c.execute("DELETE FROM conversations WHERE id=%s", (conv_id,))
     conn.commit()
 
-    c.execute("SELECT id FROM conversations WHERE username=? ORDER BY id DESC LIMIT 1",
+    c.execute("SELECT id FROM conversations WHERE username=%s ORDER BY id DESC LIMIT 1",
               (session["user"],))
     next_chat = c.fetchone()
 
     conn.close()
 
-    return redirect(f"/chat/{next_chat['id']}") if next_chat else redirect("/")
+    return redirect(f"/chat/{next_chat[0]}") if next_chat else redirect("/")
 
 # ---------- RENAME ----------
 @app.route("/edit_chat/<int:conv_id>", methods=["POST"])
@@ -246,7 +237,7 @@ def edit_chat(conv_id):
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("UPDATE conversations SET title=? WHERE id=? AND username=?",
+    c.execute("UPDATE conversations SET title=%s WHERE id=%s AND username=%s",
               (title, conv_id, session["user"]))
 
     conn.commit()
@@ -268,51 +259,46 @@ def tool():
 
     conv_id = session.get("conv_id")
 
-    # create conversation
     if not conv_id:
         base_title = user_input or (file.filename if file else "New Chat")
         title = generate_chat_title(base_title)
 
-        c.execute("INSERT INTO conversations (username, title) VALUES (?, ?)",
+        c.execute("INSERT INTO conversations (username, title) VALUES (%s, %s) RETURNING id",
                   (session["user"], title))
 
-        conv_id = c.lastrowid
+        conv_id = c.fetchone()[0]
         session["conv_id"] = conv_id
 
     extracted_text = ""
 
-    # PDF
     if file and file.filename.endswith(".pdf"):
         reader = PdfReader(file)
         for page in reader.pages:
             extracted_text += page.extract_text() or ""
 
-    # Image
     elif file and file.mimetype.startswith("image"):
         extracted_text = f"User uploaded image ({file.filename}). Describe it."
 
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    # Image generation
     if user_input and any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]) and not file:
         img = generate_image(user_input)
 
         c.execute("""
             INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         """, (conv_id, session["user"], user_input, img, "image"))
 
         conn.commit()
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # Text response
     result = query_ai(final_prompt)
     formatted = markdown.markdown(result)
 
     c.execute("""
         INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
     """, (conv_id, session["user"], user_input, formatted, "text"))
 
     conn.commit()
@@ -332,11 +318,11 @@ def login():
         conn = get_db()
         c = conn.cursor()
 
-        c.execute("SELECT password FROM users WHERE username=?", (user,))
+        c.execute("SELECT password FROM users WHERE username=%s", (user,))
         data = c.fetchone()
         conn.close()
 
-        if data and pwd == data["password"]:
+        if data and pwd == data[0]:
             session["user"] = user
             return redirect("/")
         else:
@@ -355,11 +341,13 @@ def register():
         try:
             conn = get_db()
             c = conn.cursor()
-            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user, pwd))
+
+            c.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (user, pwd))
             conn.commit()
             conn.close()
+
             return redirect("/login")
-        except sqlite3.IntegrityError:
+        except:
             error = "Username exists"
 
     return render_template("register.html", error=error)

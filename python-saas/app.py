@@ -53,8 +53,7 @@ def generate_image(prompt):
 
 # ---------- DB ----------
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
-    return conn
+    return psycopg2.connect(DATABASE_URL, sslmode='require')
 
 def init_db():
     conn = get_db()
@@ -86,6 +85,24 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS stories(
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL,
+        content TEXT,
+        media_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP
+    )""")
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS story_views(
+        id SERIAL PRIMARY KEY,
+        story_id INTEGER,
+        viewer TEXT,
+        viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     conn.commit()
     conn.close()
 
@@ -105,7 +122,6 @@ def home():
     c.execute("SELECT id, title FROM conversations WHERE username=%s ORDER BY id DESC",
               (session["user"],))
     conversations = c.fetchall()
-
     conn.close()
 
     return render_template("dashboard.html",
@@ -161,14 +177,13 @@ def open_chat(conv_id):
                            conversations=conversations,
                            active_chat=conv_id)
 
-# ---------- SEARCH CHAT ----------
+# ---------- SEARCH ----------
 @app.route("/search")
 def search():
     if "user" not in session:
         return {"results": []}
 
     q = request.args.get("q", "").strip()
-
     if len(q) < 2:
         return {"results": []}
 
@@ -188,7 +203,6 @@ def search():
     conn.close()
 
     results = []
-
     for r in rows:
         full_text = (r[2] or "") + " " + (r[3] or "")
         idx = full_text.lower().find(q.lower())
@@ -205,47 +219,7 @@ def search():
 
     return {"results": results}
 
-# ---------- DELETE ----------
-@app.route("/delete_chat/<int:conv_id>", methods=["POST"])
-def delete_chat(conv_id):
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("DELETE FROM chats WHERE conversation_id=%s", (conv_id,))
-    c.execute("DELETE FROM conversations WHERE id=%s", (conv_id,))
-    conn.commit()
-
-    c.execute("SELECT id FROM conversations WHERE username=%s ORDER BY id DESC LIMIT 1",
-              (session["user"],))
-    next_chat = c.fetchone()
-
-    conn.close()
-
-    return redirect(f"/chat/{next_chat[0]}") if next_chat else redirect("/")
-
-# ---------- RENAME ----------
-@app.route("/edit_chat/<int:conv_id>", methods=["POST"])
-def edit_chat(conv_id):
-    if "user" not in session:
-        return redirect("/login")
-
-    title = request.form.get("title")
-
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("UPDATE conversations SET title=%s WHERE id=%s AND username=%s",
-              (title, conv_id, session["user"]))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(f"/chat/{conv_id}")
-
-# ---------- TOOL ----------
+# ---------- TOOL (AI CHAT + IMAGE + PDF) ----------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -260,12 +234,9 @@ def tool():
     conv_id = session.get("conv_id")
 
     if not conv_id:
-        base_title = user_input or (file.filename if file else "New Chat")
-        title = generate_chat_title(base_title)
-
+        title = generate_chat_title(user_input or "New Chat")
         c.execute("INSERT INTO conversations (username, title) VALUES (%s, %s) RETURNING id",
                   (session["user"], title))
-
         conv_id = c.fetchone()[0]
         session["conv_id"] = conv_id
 
@@ -281,7 +252,8 @@ def tool():
 
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    if user_input and any(k in user_input.lower() for k in ["image", "draw", "photo", "picture"]) and not file:
+    # Image generation
+    if user_input and any(k in user_input.lower() for k in ["image","draw","photo","picture"]) and not file:
         img = generate_image(user_input)
 
         c.execute("""
@@ -293,6 +265,7 @@ def tool():
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
+    # Text AI
     result = query_ai(final_prompt)
     formatted = markdown.markdown(result)
 
@@ -305,6 +278,73 @@ def tool():
     conn.close()
 
     return redirect(f"/chat/{conv_id}")
+
+# ---------- STORIES ----------
+@app.route("/add_story", methods=["POST"])
+def add_story():
+    if "user" not in session:
+        return redirect("/login")
+
+    content = request.form.get("content", "")
+    media_url = request.form.get("media_url", "")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO stories (username, content, media_url, expires_at)
+        VALUES (%s, %s, %s, NOW() + INTERVAL '24 HOURS')
+    """, (session["user"], content, media_url))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+@app.route("/stories")
+def get_stories():
+    if "user" not in session:
+        return jsonify([])
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT id, username, content, media_url, created_at
+        FROM stories
+        WHERE expires_at > NOW()
+        ORDER BY created_at DESC
+    """)
+
+    rows = c.fetchall()
+    conn.close()
+
+    return jsonify([{
+        "id": r[0],
+        "user": r[1],
+        "content": r[2],
+        "media": r[3],
+        "created_at": str(r[4])
+    } for r in rows])
+
+# ✅ VIEW TRACKING (NEW)
+@app.route("/view_story/<int:story_id>")
+def view_story(story_id):
+    if "user" not in session:
+        return jsonify({"status": "error"})
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO story_views (story_id, viewer)
+        VALUES (%s, %s)
+    """, (story_id, session["user"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
 
 # ---------- AUTH ----------
 @app.route("/login", methods=["GET", "POST"])

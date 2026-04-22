@@ -1,11 +1,12 @@
-from flask import Flask, request, render_template, redirect, session, jsonify
+from flask import Flask, request, render_template, redirect, session, jsonify, Response, stream_with_context
 import psycopg2
 import os
 from dotenv import load_dotenv
 import markdown
 from openai import OpenAI
 from PyPDF2 import PdfReader
-import bcrypt   # ✅ NEW
+import bcrypt
+import json
 
 # ---------- ENV ----------
 load_dotenv()
@@ -21,7 +22,26 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
+def query_ai_stream(prompt):
+    """Generates a stream of tokens from the AI model."""
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "Answer clearly and briefly."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=400,
+            stream=True  # ✅ Enable streaming
+        )
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        yield f"Error: {str(e)}"
+
 def query_ai(prompt):
+    """Fallback non-streaming query function."""
     try:
         res = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -220,7 +240,42 @@ def search():
 
     return {"results": results}
 
-# ---------- TOOL ----------
+# ---------- STREAMING TOOL ----------
+@app.route("/stream")
+def stream():
+    """Endpoint for Server-Sent Events (SSE) streaming."""
+    if "user" not in session:
+        return Response("Unauthorized", status=401)
+
+    prompt = request.args.get("prompt", "")
+    conv_id = session.get("conv_id")
+
+    def generate():
+        full_response = []
+        # Stream word by word
+        for chunk in query_ai_stream(prompt):
+            full_response.append(chunk)
+            # Standard SSE format: data: <content>\n\n
+            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+        
+        # After stream ends, save to DB
+        complete_text = "".join(full_response)
+        formatted = markdown.markdown(complete_text)
+        
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (conv_id, session["user"], prompt, formatted, "text"))
+        conn.commit()
+        conn.close()
+        
+        yield "data: [DONE]\n\n"
+
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
+
+# ---------- TOOL (MODIFIED FOR INITIAL LOGIC) ----------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -234,6 +289,7 @@ def tool():
 
     conv_id = session.get("conv_id")
 
+    # Ensure conversation exists
     if not conv_id:
         title = generate_chat_title(user_input or "New Chat")
         c.execute("INSERT INTO conversations (username, title) VALUES (%s, %s) RETURNING id",
@@ -242,41 +298,32 @@ def tool():
         session["conv_id"] = conv_id
 
     extracted_text = ""
-
     if file and file.filename.endswith(".pdf"):
         reader = PdfReader(file)
         for page in reader.pages:
             extracted_text += page.extract_text() or ""
-
     elif file and file.mimetype.startswith("image"):
         extracted_text = f"User uploaded image ({file.filename}). Describe it."
 
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
+    # Handle Static Image Generation (Pollinations)
     if user_input and any(k in user_input.lower() for k in ["image","draw","photo","picture"]) and not file:
         img = generate_image(user_input)
-
         c.execute("""
             INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
             VALUES (%s, %s, %s, %s, %s)
         """, (conv_id, session["user"], user_input, img, "image"))
-
         conn.commit()
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    result = query_ai(final_prompt)
-    formatted = markdown.markdown(result)
-
-    c.execute("""
-        INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (conv_id, session["user"], user_input, formatted, "text"))
-
+    # For text/PDF queries, redirect to the frontend with the prompt to trigger the SSE stream
     conn.commit()
     conn.close()
-
-    return redirect(f"/chat/{conv_id}")
+    
+    # Passing the prompt via URL for the frontend to pick up and call /stream
+    return redirect(f"/chat/{conv_id}?prompt={final_prompt}")
 
 # ---------- STORIES ----------
 @app.route("/add_story", methods=["POST"])
@@ -363,9 +410,9 @@ def login():
         if data:
             stored = data[0]
 
-            if stored.startswith("$2b$"):  # hashed
+            if stored.startswith("$2b$"):
                 valid = bcrypt.checkpw(pwd.encode(), stored.encode())
-            else:  # old plain password
+            else:
                 valid = (pwd == stored)
                 if valid:
                     new_hash = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()

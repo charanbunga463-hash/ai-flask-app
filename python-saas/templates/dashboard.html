@@ -75,7 +75,7 @@
         .chat-scroll-area {
             flex: 1;
             overflow-y: auto;
-            padding: 80px 15% 20px 15%; /* Responsive centering */
+            padding: 80px 15% 20px 15%; 
         }
 
         /* Message Styling */
@@ -96,6 +96,7 @@
             margin: 15px 0;
             border: 1px solid var(--border-ui);
             max-width: 85%;
+            word-wrap: break-word;
         }
 
         /* --- INPUT AREA --- */
@@ -142,10 +143,22 @@
         .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
         .icon-btn:hover { color: white; }
 
+        /* Cursor blinking for streaming */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: var(--accent-blue);
+            margin-left: 4px;
+            animation: blink 0.8s infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
     </style>
 </head>
 
-<body class="">
+<body>
 
 <div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
 
@@ -201,16 +214,20 @@
                 {% endif %}
             </div>
         {% endfor %}
+        <div id="streamingContainer"></div>
     </div>
 
     <div class="input-container">
-        <form method="POST" action="/tool" enctype="multipart/form-data">
+        <form id="chatForm" method="POST" action="/tool" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="file" style="display:none;" accept="image/*,application/pdf">
+            
             <div class="custom-input-group">
-                <button type="button" class="icon-btn">➕</button>
+                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()">➕</button>
                 <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
                 <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
                 <button type="submit" class="btn btn-primary px-4">Send</button>
             </div>
+            <div id="fileStatus" style="font-size: 10px; color: #2563eb; margin-top: 5px; margin-left: 45px;"></div>
         </form>
     </div>
 </div>
@@ -219,6 +236,15 @@
 const sidebar = document.getElementById("sidebar");
 const menuTrigger = document.getElementById("menuTrigger");
 const chatBox = document.getElementById("chatBox");
+const fileInput = document.getElementById("fileInput");
+const fileStatus = document.getElementById("fileStatus");
+
+/* PLUS (+) BUTTON FILE LOGIC */
+fileInput.onchange = () => {
+    if (fileInput.files.length > 0) {
+        fileStatus.innerText = "📎 File ready: " + fileInput.files[0].name;
+    }
+};
 
 /* TOGGLE LOGIC */
 menuTrigger.onclick = () => {
@@ -232,9 +258,56 @@ function closeSidebar() {
 }
 
 /* AUTO-SCROLL TO BOTTOM */
-window.onload = () => {
+function scrollToBottom() {
     chatBox.scrollTop = chatBox.scrollHeight;
-};
+}
+window.onload = scrollToBottom;
+
+/* STREAMING LOGIC */
+const urlParams = new URLSearchParams(window.location.search);
+const streamPrompt = urlParams.get('prompt');
+
+if (streamPrompt) {
+    const streamingContainer = document.getElementById('streamingContainer');
+    
+    // Create User Message bubble for the prompt being streamed
+    const uBox = document.createElement('div');
+    uBox.className = 'user-box';
+    uBox.innerText = streamPrompt;
+    streamingContainer.appendChild(uBox);
+
+    // Create Bot Response bubble
+    const rBox = document.createElement('div');
+    rBox.className = 'response-box';
+    rBox.innerHTML = '<span id="streamTarget"></span><span class="cursor"></span>';
+    streamingContainer.appendChild(rBox);
+    scrollToBottom();
+
+    const streamTarget = document.getElementById('streamTarget');
+    const eventSource = new EventSource(`/stream?prompt=${encodeURIComponent(streamPrompt)}`);
+
+    eventSource.onmessage = (event) => {
+        if (event.data === "[DONE]") {
+            eventSource.close();
+            document.querySelector('.cursor').remove();
+            // Optional: Refresh after 1.5s to get formatted Markdown from server
+            setTimeout(() => { window.location.href = window.location.pathname; }, 1500);
+            return;
+        }
+        try {
+            const data = JSON.parse(event.data);
+            streamTarget.innerText += data.chunk;
+            scrollToBottom();
+        } catch (e) {
+            console.error("Stream parse error", e);
+        }
+    };
+
+    eventSource.onerror = () => {
+        eventSource.close();
+        document.querySelector('.cursor').remove();
+    };
+}
 
 /* SEARCH */
 searchBox.oninput = async () => {

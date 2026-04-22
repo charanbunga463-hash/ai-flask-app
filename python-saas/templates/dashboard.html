@@ -3,245 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI | Professional Interface</title>
+    <title>Nexus AI | Intelligent Interface</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
     <style>
         :root {
-            --bg-dark: #09090b;
+            /* Professional Dark Color Palette */
+            --bg-main: #09090b;
+            --bg-sidebar: #121214;
             --bg-card: #18181b;
-            --accent: #3b82f6;
-            --border: #27272a;
-            --text-primary: #fafafa;
-            --text-secondary: #a1a1aa;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-subtle: #27272a;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --user-msg-bg: #3b82f6;
+            --sidebar-width: 280px;
+            --transition-speed: 0.3s;
         }
 
+        /* Base Reset & Layout */
         body { 
-            background: var(--bg-dark); 
-            color: var(--text-primary); 
-            font-family: system-ui, -apple-system, sans-serif; 
-            margin: 0; 
-            overflow: hidden; 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
         }
 
-        /* Smooth Sidebar */
+        /* Sidebar Component */
         .sidebar { 
-            width: 300px; 
-            background: var(--bg-card); 
-            border-right: 1px solid var(--border); 
+            width: var(--sidebar-width); 
+            background: var(--bg-sidebar); 
+            border-right: 1px solid var(--border-subtle); 
             height: 100vh; 
             position: fixed; 
-            left: -300px; 
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 1000; 
-            padding: 20px;
+            left: calc(var(--sidebar-width) * -1); 
+            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1050; 
             display: flex;
             flex-direction: column;
+            padding: 1.5rem;
         }
-        .sidebar.open { transform: translateX(300px); }
+        .sidebar.open { transform: translateX(var(--sidebar-width)); }
 
-        /* Main Viewport */
-        .chat-area { 
+        /* Navigation Controls */
+        .menu-trigger { 
+            position: fixed; top: 1.25rem; left: 1.25rem; 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 0.6rem; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            z-index: 1100;
+            transition: all 0.2s ease;
+        }
+        .menu-trigger:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+        /* Main Content Container */
+        .viewport { 
+            flex: 1;
             display: flex; 
             flex-direction: column; 
             height: 100vh; 
             width: 100%; 
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
             position: relative;
+            transition: filter var(--transition-speed);
         }
+        body.sidebar-open .viewport { filter: blur(2px); pointer-events: none; }
 
-        /* Icon Button */
-        .main-icon { 
-            position: fixed; top: 15px; left: 15px; 
-            background: var(--bg-card); 
-            border: 1px solid var(--border);
-            padding: 10px; border-radius: 12px; cursor: pointer; z-index: 1100;
-            transition: all 0.2s;
-        }
-        .main-icon:hover { background: var(--border); border-color: var(--accent); }
-
-        /* Messages Styling */
-        .messages { 
+        /* Chat Message Area */
+        .chat-container { 
             flex: 1; 
             overflow-y: auto; 
-            padding: 80px 20px 40px; 
+            padding: 80px 1.5rem 2rem; 
             scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
+            scrollbar-color: var(--border-subtle) transparent;
         }
 
-        .user-box { 
+        .message-wrapper { margin-bottom: 2rem; display: flex; flex-direction: column; }
+
+        .msg-user { 
             align-self: flex-end; 
-            background: var(--accent); 
-            padding: 12px 18px; 
-            border-radius: 20px 20px 4px 20px; 
-            margin-bottom: 24px;
-            max-width: 80%;
+            background: var(--user-msg-bg); 
+            padding: 0.8rem 1.2rem; 
+            border-radius: 18px 18px 2px 18px; 
+            max-width: 85%;
             font-size: 0.95rem;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
         }
 
-        .response-box { 
+        .msg-ai { 
             align-self: flex-start; 
-            background: transparent; 
-            padding: 0 10px; 
-            margin-bottom: 32px;
             width: 100%;
-            border-left: 2px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-left: 3px solid var(--border-subtle);
             transition: border-color 0.3s;
         }
-        .response-box:hover { border-left-color: var(--accent); }
+        .msg-ai:hover { border-left-color: var(--accent-primary); }
 
-        /* Input Container */
-        .input-area { 
-            padding: 20px 40px 40px; 
-            background: linear-gradient(180deg, transparent 0%, var(--bg-dark) 20%);
+        /* Professional Input Bar */
+        .input-footer { 
+            padding: 1.5rem 1.5rem 2.5rem; 
+            background: linear-gradient(0deg, var(--bg-main) 70%, transparent 100%);
         }
 
-        .input-group-custom {
+        .composer-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-subtle);
             border-radius: 16px;
             display: flex;
             align-items: center;
-            padding: 8px 16px;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
         }
-        .input-group-custom:focus-within {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 1px var(--accent);
+        .composer-card:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
 
-        .input-group-custom input {
+        .composer-input {
             background: transparent;
             border: none;
-            color: var(--text-primary);
+            color: var(--text-main);
             flex: 1;
-            padding: 10px;
+            padding: 0.75rem;
             outline: none;
+            font-size: 1rem;
         }
 
-        /* History Elements */
-        .history-box { 
-            background: rgba(255,255,255,0.03); 
-            padding: 10px 14px; 
-            border-radius: 8px; 
-            margin-bottom: 6px; 
+        /* Action Buttons */
+        .icon-btn { 
+            color: var(--text-muted); 
+            background: none; 
+            border: none; 
+            padding: 8px; 
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        .icon-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+        
+        .send-btn { 
+            background: var(--accent-primary); 
+            border: none; 
+            border-radius: 10px; 
+            color: white; 
+            padding: 0.5rem 1.2rem; 
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .send-btn:hover { background: var(--accent-hover); }
+
+        /* History Items */
+        .nav-item { 
+            background: transparent; 
+            padding: 0.75rem 1rem; 
+            border-radius: 10px; 
+            margin-bottom: 0.5rem; 
             display: flex; 
-            justify-content: space-between;
             align-items: center;
+            text-decoration: none;
+            color: var(--text-muted);
             font-size: 0.9rem;
+            transition: 0.2s;
         }
-        .history-box a { color: var(--text-secondary); text-decoration: none; }
-        .history-box:hover { background: rgba(255,255,255,0.08); }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
 
-        /* Utility */
-        .btn-action { color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 5px; }
-        .btn-action:hover { color: var(--text-primary); }
-        .btn-send { background: var(--accent); border: none; border-radius: 8px; color: white; padding: 6px 16px; font-weight: 500; }
-
-        @media (max-width: 768px) {
-            .input-area { padding: 10px 15px 25px; }
-            .chat-area { width: 95%; }
+        @media (min-width: 1200px) {
+            .sidebar { left: 0; }
+            .viewport { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+            .menu-trigger { display: none; }
+            body.sidebar-open .viewport { filter: none; pointer-events: auto; }
         }
     </style>
 </head>
 <body>
 
-<div id="mainIcon" class="main-icon">
-    <svg width="20" height="20" fill="white" viewBox="0 0 16 16">
-        <path d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-    </svg>
-</div>
+<button id="menuTrigger" class="menu-trigger" aria-label="Toggle Sidebar">
+    <i class="bi bi-list fs-4"></i>
+</button>
 
-<div id="sidebar" class="sidebar">
+<aside id="sidebar" class="sidebar">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <span class="fw-bold tracking-tight">DASHBOARD</span>
-        <button class="btn-action" onclick="closeSidebar()">✕</button>
+        <h6 class="mb-0 fw-bold tracking-widest text-uppercase small opacity-75">Workspace</h6>
+        <button class="icon-btn d-xl-none" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <div class="flex-grow-1 overflow-auto pe-2">
-        <a href="/new_chat" class="btn btn-outline-light w-100 mb-4 py-2" style="border-radius: 10px; border-color: var(--border); font-size: 0.9rem;">+ New Session</a>
+    <div class="flex-grow-1 overflow-auto">
+        <a href="/new_chat" class="btn btn-outline-secondary w-100 mb-4 py-2 text-start d-flex align-items-center" style="border-radius: 12px;">
+            <i class="bi bi-plus-lg me-2"></i> New Session
+        </a>
         
-        <div id="chatHistory">
+        <nav id="chatHistory">
             {% for conv in conversations %}
-            <div class="history-box" id="item-{{ conv[0] }}">
-                <a href="/chat/{{ conv[0] }}" class="text-truncate me-2">{{ conv[1] }}</a>
-                <button class="btn-action" onclick="toggleMenu(event, '{{ conv[0] }}')">⋮</button>
+            <div class="nav-item">
+                <i class="bi bi-chat-left me-3 opacity-50"></i>
+                <a href="/chat/{{ conv[0] }}" class="text-truncate flex-grow-1 text-decoration-none color-inherit">{{ conv[1] }}</a>
+                <i class="bi bi-three-dots opacity-50 cursor-pointer"></i>
             </div>
             {% endfor %}
-        </div>
+        </nav>
     </div>
 
     <div class="pt-3 border-top border-secondary">
-        <a href="/logout" class="text-danger text-decoration-none small">End Session</a>
+        <a href="/logout" class="nav-item text-danger mb-0">
+            <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+        </a>
     </div>
-</div>
+</aside>
 
-<div class="chat-area">
-    <div id="chatBox" class="messages d-flex flex-column">
+<main class="viewport">
+    <div id="chatBox" class="chat-container d-flex flex-column">
         {% for msg in chat %}
-            <div class="{{ 'user-box' if msg.role == 'user' else 'response-box' }}">
-                {% if msg.type == "text" %}{{ msg.bot | safe }}{% endif %}
-                {% if msg.type == "image" %}<img src="{{ msg.image }}" class="img-fluid rounded-3 mt-2 border border-secondary">{% endif %}
+        <div class="message-wrapper">
+            <div class="{{ 'msg-user' if msg.role == 'user' else 'msg-ai' }}">
+                {% if msg.type == "text" %}
+                    <div class="content-text">{{ msg.bot | safe }}</div>
+                {% endif %}
+                
+                {% if msg.type == "image" %}
+                    <img src="{{ msg.image }}" alt="Generated Content" class="img-fluid rounded-4 mt-3 border border-dark shadow-lg">
+                {% endif %}
             </div>
+        </div>
         {% endfor %}
     </div>
 
-    <div class="input-area">
+    <section class="input-footer">
         <form method="POST" action="/tool" enctype="multipart/form-data" id="chatForm">
-            <div class="input-group-custom">
-                <label for="fileInput" class="btn-action me-2">
-                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.159 1.43-1.159 2.333v.5h-.5C2.002 4.933 1 5.999 1 7.291 1 8.791 2.209 10 3.708 10H5a.5.5 0 0 1 0 1H3.708C1.659 11 0 9.341 0 7.291c0-1.852 1.348-3.393 3.126-3.727 1.057-2.257 3.232-3.834 5.753-3.834z"/></svg>
-                    <input type="file" id="fileInput" name="file" style="display:none;">
+            <div class="composer-card">
+                <label for="fileInput" class="icon-btn" title="Upload Media">
+                    <i class="bi bi-paperclip fs-5"></i>
+                    <input type="file" id="fileInput" name="file" hidden>
                 </label>
 
-                <input id="chatInput" name="input" placeholder="Enter message..." autocomplete="off">
+                <input type="text" id="chatInput" name="input" 
+                       placeholder="Message Nexus AI..." 
+                       autocomplete="off" 
+                       class="composer-input">
                 
-                <button type="button" id="micBtn" class="btn-action mx-2">🎤</button>
-                <button type="submit" class="btn-send">Send</button>
+                <button type="button" id="micBtn" class="icon-btn" title="Voice Input">
+                    <i class="bi bi-mic fs-5"></i>
+                </button>
+
+                <button type="submit" class="send-btn">
+                    <span class="d-none d-md-inline">Send</span>
+                    <i class="bi bi-send-fill d-md-none"></i>
+                </button>
             </div>
         </form>
-    </div>
-</div>
+    </section>
+</main>
 
 <script>
     const sidebar = document.getElementById("sidebar");
-    const mainIcon = document.getElementById("mainIcon");
+    const menuTrigger = document.getElementById("menuTrigger");
     const chatBox = document.getElementById("chatBox");
+    const chatInput = document.getElementById("chatInput");
 
-    // Toggle Sidebar with smooth transform
-    mainIcon.onclick = () => {
+    // Toggle Sidebar Functionality
+    function toggleSidebar() {
         sidebar.classList.toggle("open");
+        document.body.classList.toggle("sidebar-open");
+    }
+
+    menuTrigger.addEventListener('click', toggleSidebar);
+
+    // Auto-scroll to latest message
+    const scrollToBottom = () => {
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
     };
+    window.addEventListener('load', scrollToBottom);
 
-    function closeSidebar() {
-        sidebar.classList.remove("open");
-    }
-
-    // Auto-scroll logic
-    function scrollToBottom() {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-    window.onload = scrollToBottom;
-
-    // Mic Logic
-    let recognition;
+    // Voice Recognition Logic
     const micBtn = document.getElementById("micBtn");
+    let isRecording = false;
+
     micBtn.onclick = () => {
-        if(!('webkitSpeechRecognition' in window)) return alert("Voice input not supported in this browser.");
-        recognition = new webkitSpeechRecognition();
-        recognition.start();
-        micBtn.style.color = "#ef4444";
-        recognition.onresult = (e) => {
-            document.getElementById("chatInput").value = e.results[0][0].transcript;
+        if (!('webkitSpeechRecognition' in window)) {
+            return alert("Voice features require Chrome or Edge.");
+        }
+
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isRecording = true;
+            micBtn.style.color = "#ef4444";
+            chatInput.placeholder = "Listening...";
         };
-        recognition.onend = () => micBtn.style.color = "var(--text-secondary)";
+
+        recognition.onresult = (event) => {
+            chatInput.value = event.results[0][0].transcript;
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            micBtn.style.color = "var(--text-muted)";
+            chatInput.placeholder = "Message Nexus AI...";
+        };
+
+        recognition.start();
     };
 
-    // Close sidebar on escape key
+    // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
-        if(e.key === "Escape") closeSidebar();
+        if (e.key === "Escape") {
+            sidebar.classList.remove("open");
+            document.body.classList.remove("sidebar-open");
+        }
     });
+
+    // Form Handling (Optional: prevent empty submits)
+    document.getElementById('chatForm').onsubmit = (e) => {
+        if (!chatInput.value.trim() && !document.getElementById('fileInput').files.length) {
+            e.preventDefault();
+        }
+    };
 </script>
 
 </body>

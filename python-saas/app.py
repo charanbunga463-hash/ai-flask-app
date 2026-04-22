@@ -241,24 +241,22 @@ def search():
     return {"results": results}
 
 # ---------- STREAMING TOOL ----------
+# ---------- STREAMING TOOL ----------
 @app.route("/stream")
 def stream():
-    """Endpoint for Server-Sent Events (SSE) streaming."""
     if "user" not in session:
         return Response("Unauthorized", status=401)
 
-    prompt = request.args.get("prompt", "")
+    # Get prompt from session and then clear it
+    prompt = session.pop("pending_prompt", "Hello")
     conv_id = session.get("conv_id")
 
     def generate():
         full_response = []
-        # Stream word by word
         for chunk in query_ai_stream(prompt):
             full_response.append(chunk)
-            # Standard SSE format: data: <content>\n\n
             yield f"data: {json.dumps({'chunk': chunk})}\n\n"
         
-        # After stream ends, save to DB
         complete_text = "".join(full_response)
         formatted = markdown.markdown(complete_text)
         
@@ -275,7 +273,7 @@ def stream():
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
-# ---------- TOOL (MODIFIED FOR INITIAL LOGIC) ----------
+# ---------- TOOL (FIXED FOR LARGE PDFS) ----------
 @app.route("/tool", methods=["POST"])
 def tool():
     if "user" not in session:
@@ -283,13 +281,10 @@ def tool():
 
     user_input = request.form.get("input", "")
     file = request.files.get("file")
-
     conn = get_db()
     c = conn.cursor()
-
     conv_id = session.get("conv_id")
 
-    # Ensure conversation exists
     if not conv_id:
         title = generate_chat_title(user_input or "New Chat")
         c.execute("INSERT INTO conversations (username, title) VALUES (%s, %s) RETURNING id",
@@ -299,31 +294,30 @@ def tool():
 
     extracted_text = ""
     if file and file.filename.endswith(".pdf"):
-        reader = PdfReader(file)
-        for page in reader.pages:
-            extracted_text += page.extract_text() or ""
-    elif file and file.mimetype.startswith("image"):
-        extracted_text = f"User uploaded image ({file.filename}). Describe it."
+        try:
+            reader = PdfReader(file)
+            for page in reader.pages:
+                extracted_text += page.extract_text() or ""
+        except Exception as e:
+            extracted_text = f"\n[Error reading PDF: {str(e)}]"
 
     final_prompt = f"{user_input}\n\n{extracted_text}".strip()
 
-    # Handle Static Image Generation (Pollinations)
-    if user_input and any(k in user_input.lower() for k in ["image","draw","photo","picture"]) and not file:
+    if user_input and any(k in user_input.lower() for k in ["image","draw","photo"]) and not file:
         img = generate_image(user_input)
-        c.execute("""
-            INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (conv_id, session["user"], user_input, img, "image"))
+        c.execute("INSERT INTO chats (conversation_id, username, user_msg, bot_msg, type) VALUES (%s, %s, %s, %s, %s)",
+                  (conv_id, session["user"], user_input, img, "image"))
         conn.commit()
         conn.close()
         return redirect(f"/chat/{conv_id}")
 
-    # For text/PDF queries, redirect to the frontend with the prompt to trigger the SSE stream
+    # STORE IN SESSION INSTEAD OF URL
+    session["pending_prompt"] = final_prompt
     conn.commit()
     conn.close()
     
-    # Passing the prompt via URL for the frontend to pick up and call /stream
-    return redirect(f"/chat/{conv_id}?prompt={final_prompt}")
+    # Redirect with a trigger flag instead of the full text
+    return redirect(f"/chat/{conv_id}?do_stream=true")
 
 # ---------- STORIES ----------
 @app.route("/add_story", methods=["POST"])

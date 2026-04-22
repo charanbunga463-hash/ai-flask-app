@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional AI Interface</title>
+    <title>Professional AI Dashboard</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -21,7 +21,7 @@
         body {
             background: var(--bg-body);
             color: #f8fafc;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
@@ -42,59 +42,98 @@
             z-index: 1050;
             padding: 1rem;
         }
-
         .sidebar.open { left: 0; }
 
-        /* --- MAIN CONTENT AREA --- */
+        /* --- MAIN WRAPPER --- */
         .main-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
             height: 100%;
-            margin-left: 0;
             transition: margin-left var(--transition-speed);
             position: relative;
         }
-
         body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
-        /* --- STORIES SECTION --- */
+        /* --- STORIES --- */
         .stories-container {
             display: flex;
             gap: 15px;
             padding: 15px 15%;
             overflow-x: auto;
+            background: #111827;
             border-bottom: 1px solid var(--border-ui);
-            background: rgba(30, 41, 59, 0.5);
         }
         .story-circle {
-            min-width: 65px;
-            height: 65px;
+            min-width: 60px;
+            height: 60px;
             border-radius: 50%;
             border: 2px solid var(--accent-blue);
-            padding: 2px;
             cursor: pointer;
-            text-align: center;
+            padding: 2px;
+            overflow: hidden;
         }
-        .story-circle img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
+        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .add-story-btn {
-            min-width: 65px;
-            height: 65px;
+            min-width: 60px;
+            height: 60px;
             border-radius: 50%;
-            background: var(--border-ui);
+            background: var(--bg-card);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 24px;
+            border: 1px dashed #64748b;
         }
 
-        /* --- UI ELEMENTS --- */
+        /* --- CHAT AREA --- */
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 15%;
+        }
+        .user-box {
+            background: var(--accent-blue);
+            padding: 12px 20px;
+            border-radius: 15px 15px 0 15px;
+            margin: 15px 0 15px auto;
+            max-width: 80%;
+            width: fit-content;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .response-box {
+            background: #020617;
+            padding: 20px;
+            border-radius: 0 15px 15px 15px;
+            margin: 15px 0;
+            border: 1px solid var(--border-ui);
+            max-width: 85%;
+        }
+        .response-box img { max-width: 100%; border-radius: 10px; margin-top: 10px; }
+
+        /* --- INPUT --- */
+        .input-container {
+            padding: 20px 15%;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-ui);
+        }
+        .custom-input-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-ui);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
+        .custom-input-group input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 12px;
+            flex: 1;
+            outline: none;
+        }
+
         .menu-trigger {
             position: absolute;
             top: 15px;
@@ -105,106 +144,39 @@
             cursor: pointer;
             z-index: 1000;
             border: 1px solid var(--border-ui);
-            transition: background 0.2s;
-        }
-        .menu-trigger:hover { background: var(--border-ui); }
-
-        .chat-scroll-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 15%; 
         }
 
-        /* Message Styling */
-        .user-box {
-            background: var(--accent-blue);
-            padding: 12px 20px;
-            border-radius: 15px 15px 0 15px;
-            margin: 15px 0 15px auto;
-            max-width: 80%;
-            width: fit-content;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .response-box {
-            background: #020617;
-            padding: 20px;
-            border-radius: 0 15px 15px 15px;
-            margin: 15px 0;
-            border: 1px solid var(--border-ui);
-            max-width: 85%;
-            word-wrap: break-word;
-        }
-
-        /* --- INPUT AREA --- */
-        .input-container {
-            padding: 20px 15%;
-            background: var(--bg-body);
-            border-top: 1px solid var(--border-ui);
-        }
-
-        .custom-input-group {
-            background: var(--bg-card);
-            border: 1px solid var(--border-ui);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            padding: 5px 15px;
-        }
-
-        .custom-input-group input {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 10px;
-            flex: 1;
-        }
-        .custom-input-group input:focus { outline: none; }
-
-        /* --- SEARCH & HISTORY --- */
         .history-item {
-            background: var(--bg-card);
             padding: 10px;
+            background: var(--bg-card);
             border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            border: 1px solid transparent;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid transparent;
         }
         .history-item:hover { border-color: var(--accent-blue); }
-
-        .highlight { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
-
-        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
-        .icon-btn:hover { color: white; }
-
-        /* Cursor blinking for streaming */
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; }
+        
         .cursor {
             display: inline-block;
-            width: 8px;
-            height: 18px;
+            width: 8px; height: 18px;
             background: var(--accent-blue);
-            margin-left: 4px;
             animation: blink 0.8s infinite;
             vertical-align: middle;
         }
         @keyframes blink { 50% { opacity: 0; } }
-
-        /* Story Modal Styling */
-        .modal-content { background: var(--bg-card); color: white; border: 1px solid var(--border-ui); }
     </style>
 </head>
-
 <body>
 
-<div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
+<div id="menuTrigger" class="menu-trigger">☰ Menu</div>
 
 <nav id="sidebar" class="sidebar">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="m-0">History</h5>
-        <button class="icon-btn" onclick="closeSidebar()">✖</button>
+        <h5 class="m-0">AI Chat History</h5>
+        <button class="icon-btn" onclick="closeSidebar()">✕</button>
     </div>
 
     <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
@@ -219,15 +191,15 @@
                     <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
                         {{ conv[1] }}
                     </a>
-                    <div class="d-flex">
+                    <div class="d-flex gap-2">
                         <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline" onsubmit="return confirm('Delete this chat?')">
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" onsubmit="return confirm('Delete this chat?')">
                             <button class="icon-btn">🗑</button>
                         </form>
                     </div>
                 </div>
                 <form method="POST" action="/edit_chat/{{ conv[0] }}">
-                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Press Enter to rename...">
+                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Enter to rename">
                 </form>
             {% endfor %}
         </div>
@@ -240,20 +212,17 @@
 
 <div class="main-wrapper">
     <div class="stories-container" id="storyBar">
-        <div class="add-story-btn" data-bs-toggle="modal" data-bs-target="#storyModal" title="Add Story">+</div>
-        </div>
+        <div class="add-story-btn" data-bs-toggle="modal" data-bs-target="#storyModal">+</div>
+    </div>
 
     <div id="chatBox" class="chat-scroll-area">
         {% for msg in chat %}
             <div class="user-box">{{ msg.user }}</div>
-            
             <div class="response-box">
                 {% if msg.type == "text" %}
-                    <div class="markdown-content">{{ msg.bot | safe }}</div>
+                    <div class="msg-content">{{ msg.bot | safe }}</div>
                 {% elif msg.type == "image" %}
-                    <div class="text-center">
-                        <img src="{{ msg.image }}" class="img-fluid rounded border border-secondary shadow" style="max-height: 400px;">
-                    </div>
+                    <img src="{{ msg.image }}" class="shadow">
                 {% endif %}
             </div>
         {% endfor %}
@@ -263,184 +232,131 @@
     <div class="input-container">
         <form id="chatForm" method="POST" action="/tool" enctype="multipart/form-data">
             <input type="file" id="fileInput" name="file" style="display:none;" accept="image/*,application/pdf">
-            
-            <div class="custom-input-group">
-                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Upload PDF or Image">➕</button>
-                <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
-                <button type="button" id="micBtn" class="icon-btn me-2" title="Voice Input">🎤</button>
-                <button type="submit" class="btn btn-primary px-4 shadow-sm">Send</button>
+            <div class="custom-input-group shadow-lg">
+                <button type="button" class="icon-btn" onclick="document.getElementById('fileInput').click()">➕</button>
+                <input id="chatInput" name="input" placeholder="Type here or upload a PDF..." required autocomplete="off">
+                <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
+                <button type="submit" class="btn btn-primary px-4">Send</button>
             </div>
-            <div id="fileStatus" style="font-size: 12px; color: #60a5fa; margin-top: 8px; margin-left: 45px; font-weight: 500;"></div>
+            <div id="fileStatus" class="mt-2 small text-info ms-5"></div>
         </form>
     </div>
 </div>
 
 <div class="modal fade" id="storyModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="/add_story" method="POST">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">Share a Story</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea name="content" class="form-control bg-dark text-white border-secondary mb-3" placeholder="What's on your mind?"></textarea>
-                    <input name="media_url" class="form-control bg-dark text-white border-secondary" placeholder="Image URL (Optional)">
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="submit" class="btn btn-primary w-100">Post Story</button>
-                </div>
-            </form>
-        </div>
+        <form action="/add_story" method="POST" class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">New Story</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea name="content" class="form-control bg-transparent text-white mb-3" placeholder="Tell your story..."></textarea>
+                <input name="media_url" class="form-control bg-transparent text-white" placeholder="Image URL (optional)">
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="submit" class="btn btn-primary w-100">Post</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const sidebar = document.getElementById("sidebar");
-const menuTrigger = document.getElementById("menuTrigger");
-const chatBox = document.getElementById("chatBox");
-const fileInput = document.getElementById("fileInput");
-const fileStatus = document.getElementById("fileStatus");
+    const sidebar = document.getElementById("sidebar");
+    const menuTrigger = document.getElementById("menuTrigger");
+    const chatBox = document.getElementById("chatBox");
+    const fileInput = document.getElementById("fileInput");
 
-/* LOAD STORIES FROM BACKEND */
-async function loadStories() {
-    const res = await fetch('/stories');
-    const stories = await res.json();
-    const bar = document.getElementById('storyBar');
-    
-    stories.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'story-circle';
-        div.onclick = () => {
-            alert(`${s.user} says: ${s.content}`);
-            fetch(`/view_story/${s.id}`); // Track view
-        };
-        const img = s.media ? s.media : `https://ui-avatars.com/api/?name=${s.user}&background=random`;
-        div.innerHTML = `<img src="${img}" title="${s.user}">`;
-        bar.appendChild(div);
-    });
-}
-loadStories();
-
-/* FILE SELECTION FEEDBACK */
-fileInput.onchange = () => {
-    if (fileInput.files.length > 0) {
-        fileStatus.innerHTML = `<span>📎 ${fileInput.files[0].name}</span> <button type="button" class="btn-close btn-close-white ms-2" style="font-size:8px" onclick="clearFile()"></button>`;
+    // Sidebar Toggle
+    menuTrigger.onclick = () => {
+        sidebar.classList.add("open");
+        document.body.classList.add("sidebar-open");
+    };
+    function closeSidebar() {
+        sidebar.classList.remove("open");
+        document.body.classList.remove("sidebar-open");
     }
-};
-function clearFile() {
-    fileInput.value = "";
-    fileStatus.innerHTML = "";
-}
 
-/* SIDEBAR TOGGLE */
-menuTrigger.onclick = () => {
-    sidebar.classList.add("open");
-    document.body.classList.add("sidebar-open");
-};
-function closeSidebar() {
-    sidebar.classList.remove("open");
-    document.body.classList.remove("sidebar-open");
-}
+    // File Upload Status
+    fileInput.onchange = () => {
+        if(fileInput.files[0]) document.getElementById("fileStatus").innerText = "📎 ready: " + fileInput.files[0].name;
+    };
 
-/* AUTO-SCROLL */
-function scrollToBottom() {
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-window.onload = scrollToBottom;
+    // Auto Scroll
+    const scrollToBottom = () => chatBox.scrollTop = chatBox.scrollHeight;
+    window.onload = scrollToBottom;
 
-/* STREAMING LOGIC */
-const urlParams = new URLSearchParams(window.location.search);
-const streamPrompt = urlParams.get('prompt');
+    // Fetch Stories
+    async function loadStories() {
+        const res = await fetch('/stories');
+        const data = await res.json();
+        const bar = document.getElementById('storyBar');
+        data.forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'story-circle';
+            div.innerHTML = `<img src="${s.media || 'https://ui-avatars.com/api/?name='+s.user}" title="${s.user}">`;
+            div.onclick = () => {
+                alert(`${s.user}: ${s.content}`);
+                fetch(`/view_story/${s.id}`);
+            };
+            bar.appendChild(div);
+        });
+    }
+    loadStories();
 
-if (streamPrompt) {
-    const streamingContainer = document.getElementById('streamingContainer');
-    const uBox = document.createElement('div');
-    uBox.className = 'user-box';
-    uBox.innerText = streamPrompt;
-    streamingContainer.appendChild(uBox);
+    // Streaming Handle
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('do_stream') === 'true') {
+        const container = document.getElementById('streamingContainer');
+        const rBox = document.createElement('div');
+        rBox.className = 'response-box';
+        rBox.innerHTML = '<div id="streamTarget"></div><span class="cursor"></span>';
+        container.appendChild(rBox);
+        scrollToBottom();
 
-    const rBox = document.createElement('div');
-    rBox.className = 'response-box';
-    rBox.innerHTML = '<span id="streamTarget"></span><span class="cursor"></span>';
-    streamingContainer.appendChild(rBox);
-    scrollToBottom();
+        const streamTarget = document.getElementById('streamTarget');
+        const eventSource = new EventSource("/stream");
+        let fullText = "";
 
-    const streamTarget = document.getElementById('streamTarget');
-    const eventSource = new EventSource(`/stream?prompt=${encodeURIComponent(streamPrompt)}`);
-    let accumulatedText = "";
-
-    eventSource.onmessage = (event) => {
-        if (event.data === "[DONE]") {
-            eventSource.close();
-            document.querySelector('.cursor').remove();
-            setTimeout(() => { window.location.href = window.location.pathname; }, 1000);
-            return;
-        }
-        try {
-            const data = JSON.parse(event.data);
-            accumulatedText += data.chunk;
-            // Render markdown as it streams
-            streamTarget.innerHTML = marked.parse(accumulatedText);
+        eventSource.onmessage = (e) => {
+            if (e.data === "[DONE]") {
+                eventSource.close();
+                document.querySelector(".cursor").remove();
+                // Refresh to finalize Markdown and clean URL
+                setTimeout(() => location.href = location.pathname, 1000);
+                return;
+            }
+            const data = JSON.parse(e.data);
+            fullText += data.chunk;
+            streamTarget.innerHTML = marked.parse(fullText); // Markdown parsing!
             scrollToBottom();
-        } catch (e) { console.error("Stream error", e); }
-    };
-}
-
-/* SEARCH FUNCTIONALITY */
-searchBox.oninput = async () => {
-    let q = searchBox.value.trim();
-    if(q.length < 2) {
-        searchResults.innerHTML = "";
-        chatHistory.style.display = "block";
-        return;
+        };
+        eventSource.onerror = () => eventSource.close();
     }
-    chatHistory.style.display = "none";
 
-    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data = await res.json();
-    let html = "";
+    // Voice to Text
+    const micBtn = document.getElementById("micBtn");
+    micBtn.onclick = () => {
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Speech) return alert("Browser does not support Speech Recognition");
+        
+        const rec = new Speech();
+        rec.start();
+        micBtn.style.color = "red";
+        rec.onresult = (e) => {
+            document.getElementById("chatInput").value = e.results[0][0].transcript;
+        };
+        rec.onend = () => micBtn.style.color = "#94a3b8";
+    };
 
-    data.results.forEach(r => {
-        let text = r.snippet.replace(new RegExp(`(${q})`,"gi"), `<span class="highlight">$1</span>`);
-        html += `<div class="history-item" onclick="location.href='/chat/${r.conv_id}'">${text}</div>`;
-    });
-    searchResults.innerHTML = html || "<div class='p-2 text-muted'>No results found</div>";
-};
-
-/* RENAME CHAT */
-function enableRename(id) {
-    const el = document.getElementById("rename-" + id);
-    el.style.display = el.style.display === "none" ? "block" : "none";
-    el.focus();
-}
-
-/* VOICE RECOGNITION */
-let isListening = false;
-const micBtn = document.getElementById("micBtn");
-micBtn.onclick = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Voice recognition not supported in this browser.");
-        return;
+    // Rename Logic
+    function enableRename(id) {
+        const input = document.getElementById("rename-" + id);
+        input.style.display = input.style.display === "none" ? "block" : "none";
+        input.focus();
     }
-    const recognition = new SpeechRecognition();
-    if(isListening) { recognition.stop(); return; }
-
-    recognition.start();
-    isListening = true;
-    micBtn.style.color = "#ef4444";
-
-    recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        document.getElementById("chatInput").value = transcript;
-    };
-    recognition.onend = () => {
-        isListening = false;
-        micBtn.style.color = "#94a3b8";
-    };
-};
 </script>
+
 </body>
 </html>

@@ -35,7 +35,7 @@ body{
     height:100vh;
     position:fixed;
     left:-300px;
-    transition:0.3s ease;
+    transition:0.3s;
     padding:15px;
     display:flex;
     flex-direction:column;
@@ -48,25 +48,24 @@ body{
     overflow-y:auto;
 }
 
-/* CHAT AREA */
+/* CHAT */
 .chat-area{
     display:flex;
     flex-direction:column;
     height:100vh;
     margin-left:0;
-    transition:0.3s ease;
+    transition:0.3s;
+}
+
+body.sidebar-open .chat-area{
+    margin-left:300px;
 }
 
 .input-area{
     padding:15px;
     border-top:1px solid #334155;
     background:#1e293b;
-    transition:0.3s ease;
-}
-
-/* DESKTOP SHIFT */
-body.sidebar-open .chat-area{
-    margin-left:300px;
+    transition:0.3s;
 }
 
 body.sidebar-open .input-area{
@@ -129,69 +128,17 @@ body.sidebar-open .input-area{
     border-radius:3px;
 }
 
-/* FILE MENU */
-.file-menu{
-    position:absolute;
-    bottom:45px;
-    background:#1e293b;
-    border:1px solid #334155;
-    border-radius:10px;
-    display:none;
-}
-.file-menu button{
-    width:100%;
-    background:none;
-    border:none;
-    color:white;
-    padding:8px;
-}
-
-/* CLOSE BTN */
-.close-btn{
+/* BUTTON */
+.icon-btn{
     background:none;
     border:none;
     color:white;
     font-size:18px;
 }
-
-/* =========================
-   📱 MOBILE DRAWER UI
-========================= */
-
-.overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-    display:none;
-    z-index:900;
-}
-
-.overlay.show{
-    display:block;
-}
-
-@media (max-width:768px){
-
-    .sidebar{
-        width:85%;
-        max-width:320px;
-    }
-
-    /* disable desktop shift */
-    body.sidebar-open .chat-area,
-    body.sidebar-open .input-area{
-        margin-left:0;
-    }
-}
 </style>
 </head>
 
 <body>
-
-<div id="overlay" class="overlay"></div>
 
 <div id="mainIcon" class="main-icon">🤖</div>
 
@@ -200,7 +147,7 @@ body.sidebar-open .input-area{
 
     <div class="sidebar-header">
         <h5>Chats</h5>
-        <button class="close-btn" onclick="closeSidebar()">✖</button>
+        <button class="icon-btn" onclick="closeSidebar()">✖</button>
     </div>
 
     <div class="sidebar-content">
@@ -214,14 +161,24 @@ body.sidebar-open .input-area{
         <div id="chatHistory">
         {% for conv in conversations %}
             <div class="history-box">
+
                 <a href="/chat/{{ conv[0] }}" style="color:white;text-decoration:none;flex:1;">
                     {{ conv[1] }}
                 </a>
 
+                <!-- DELETE -->
                 <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                    <button class="close-btn">🗑</button>
+                    <button class="icon-btn">🗑</button>
                 </form>
+
+                <!-- RENAME -->
+                <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
             </div>
+
+            <input id="rename-{{ conv[0] }}"
+                   class="form-control form-control-sm"
+                   style="display:none;"
+                   onkeydown="handleRename(event,'{{ conv[0] }}')">
         {% endfor %}
         </div>
 
@@ -240,23 +197,16 @@ body.sidebar-open .input-area{
 
 {% for msg in chat %}
 
-<div class="user-box message"
-     id="msg-{{ msg.id }}"
-     data-text="{{ msg.user | e }}">
-    {{ msg.user }}
-</div>
+<div class="user-box">{{ msg.user }}</div>
 
 {% if msg.type == "text" %}
-<div class="response-box message"
-     id="msg-{{ msg.id }}"
-     data-text="{{ msg.bot | striptags | e }}">
+<div class="response-box">
     {{ msg.bot | safe }}
 </div>
 {% endif %}
 
 {% if msg.type == "image" %}
-<div class="response-box text-center"
-     id="msg-{{ msg.id }}">
+<div class="response-box text-center">
     <img src="{{ msg.image }}" style="max-width:100%;">
 </div>
 {% endif %}
@@ -268,15 +218,20 @@ body.sidebar-open .input-area{
 <!-- INPUT -->
 <div class="input-area">
 <form method="POST" action="/tool" enctype="multipart/form-data">
+
 <div class="input-group">
 
 <button type="button" class="btn btn-outline-light">➕</button>
 
 <input class="form-control" id="chatInput" name="input" placeholder="Ask anything...">
 
+<!-- MIC -->
+<button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
+
 <button class="btn btn-primary">Send</button>
 
 </div>
+
 </form>
 </div>
 
@@ -285,28 +240,20 @@ body.sidebar-open .input-area{
 <script>
 
 const sidebar=document.getElementById("sidebar");
-const overlay=document.getElementById("overlay");
 
 /* OPEN SIDEBAR */
 document.getElementById("mainIcon").onclick=()=>{
     sidebar.classList.add("open");
     document.body.classList.add("sidebar-open");
-
-    if(window.innerWidth<=768){
-        overlay.classList.add("show");
-    }
 };
 
 /* CLOSE SIDEBAR */
 function closeSidebar(){
     sidebar.classList.remove("open");
     document.body.classList.remove("sidebar-open");
-    overlay.classList.remove("show");
 }
 
-overlay.onclick=closeSidebar;
-
-/* SEARCH */
+/* SEARCH SAFE FIX */
 searchBox.oninput=async ()=>{
     let q=searchBox.value.trim();
 
@@ -331,58 +278,70 @@ searchBox.oninput=async ()=>{
 
         html+=`
         <div class="history-box"
-             onclick="openChat(${r.conv_id},${r.msg_id},'${q}')">
+             onclick='openChat(${r.conv_id},${r.msg_id},${JSON.stringify(q)})'>
             ${text}
         </div>`;
     });
 
     searchResults.innerHTML=html;
-}
-
-function openChat(c,m,q){
-    location.href=`/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
-}
-
-/* JUMP + HIGHLIGHT */
-window.onload=()=>{
-    let p=new URLSearchParams(location.search);
-    let msg=p.get("msg");
-    let q=p.get("q");
-
-    if(msg){
-        let el=document.getElementById("msg-"+msg);
-
-        if(el){
-            el.scrollIntoView({behavior:"smooth",block:"center"});
-            highlight(el,q);
-            el.style.border="2px solid yellow";
-            setTimeout(()=>el.style.border="",2000);
-        }
-    }else{
-        chatBox.scrollTop=chatBox.scrollHeight;
-    }
 };
 
-function highlight(el,q){
-    if(!q) return;
+function openChat(c,m,q){
+    window.location.href=`/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
+}
 
-    let regex=new RegExp(`(${q})`,"gi");
+/* RENAME */
+function enableRename(id){
+    document.getElementById("rename-"+id).style.display="block";
+}
 
-    function walk(node){
-        if(node.nodeType===3){
-            if(node.nodeValue.toLowerCase().includes(q.toLowerCase())){
-                let span=document.createElement("span");
-                span.innerHTML=node.nodeValue.replace(regex,
-                    `<span class="highlight">$1</span>`);
-                node.replaceWith(span);
-            }
-        }else{
-            node.childNodes.forEach(walk);
-        }
+function handleRename(e,id){
+    if(e.key==="Enter"){
+        let val=e.target.value;
+
+        let form=document.createElement("form");
+        form.method="POST";
+        form.action="/edit_chat/"+id;
+
+        let i=document.createElement("input");
+        i.name="title";
+        i.value=val;
+
+        form.appendChild(i);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+/* MIC FIXED */
+let recognition;
+let isListening=false;
+const micBtn=document.getElementById("micBtn");
+
+micBtn.onclick=()=>{
+    if(!('webkitSpeechRecognition' in window)){
+        alert("Not supported");
+        return;
     }
 
-    walk(el);
-}
+    if(isListening){
+        recognition.stop();
+        return;
+    }
+
+    recognition=new webkitSpeechRecognition();
+    recognition.start();
+
+    isListening=true;
+
+    recognition.onresult=(e)=>{
+        chatInput.value=e.results[0][0].transcript;
+    };
+
+    recognition.onend=()=>{
+        isListening=false;
+    };
+};
 
 </script>
 

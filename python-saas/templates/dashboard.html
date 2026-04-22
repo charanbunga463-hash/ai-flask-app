@@ -3,180 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional AI Interface</title>
-
+    <title>Professional AI Tool</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
-        :root {
-            --sidebar-width: 300px;
-            --transition-speed: 0.3s;
-            --bg-body: #0f172a;
-            --bg-card: #1e293b;
-            --accent-blue: #2563eb;
-            --border-ui: #334155;
-        }
+        body { background:#0f172a; color:#e2e8f0; font-family:'Segoe UI',sans-serif; margin:0; overflow:hidden; }
+        
+        /* Layout */
+        .sidebar { width:300px; background:#0f172a; border-right:1px solid #334155; height:100vh; position:fixed; left:-300px; transition:0.3s; z-index:1000; padding:15px; display:flex; flex-direction:column; }
+        .sidebar.open { left:0; }
+        .chat-area { display:flex; flex-direction:column; height:100vh; transition:0.3s; width:100%; }
+        body.sidebar-open .chat-area { margin-left:300px; width: calc(100% - 300px); }
 
-        body {
-            background: var(--bg-body);
-            color: #f8fafc;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--bg-body);
-            border-right: 1px solid var(--border-ui);
-            height: 100%;
-            position: fixed;
-            left: calc(var(--sidebar-width) * -1);
-            transition: left var(--transition-speed);
-            display: flex;
-            flex-direction: column;
-            z-index: 1050;
-            padding: 1rem;
-        }
-
-        .sidebar.open { left: 0; }
-
-        /* --- MAIN CONTENT AREA --- */
-        .main-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            margin-left: 0;
-            transition: margin-left var(--transition-speed);
+        /* UI Elements */
+        .main-icon { position:fixed; top:10px; left:10px; background:#1e293b; padding:8px 12px; border-radius:10px; cursor:pointer; z-index:1100; border:1px solid #334155; }
+        .messages { flex:1; overflow-y:auto; padding:60px 20px 20px; }
+        .input-area { padding:20px; background:#1e293b; border-top:1px solid #334155; }
+        
+        /* History Item with Dropdown */
+        .history-box { 
             position: relative;
+            background:#1e293b; 
+            padding:10px 12px; 
+            border-radius:10px; 
+            margin-bottom:8px; 
+            display:flex; 
+            justify-content:space-between; 
+            align-items:center;
+            transition: 0.2s;
         }
+        .history-box:hover { background:#334155; }
+        
+        /* Chat Bubble Style */
+        .user-box { background:#1e40af; padding:12px; border-radius:12px; margin-top:10px; align-self: flex-end; max-width: 80%; }
+        .response-box { background:#020617; padding:15px; border-radius:12px; margin-top:10px; border:1px solid #334155; max-width: 85%; }
 
-        body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
-
-        /* --- UI ELEMENTS --- */
-        .menu-trigger {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: var(--bg-card);
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            z-index: 1000;
-            border: 1px solid var(--border-ui);
-            transition: background 0.2s;
+        /* Menu Styling */
+        .dot-menu { background:none; border:none; color:#94a3b8; font-size:20px; line-height:1; cursor:pointer; padding:0 5px; }
+        .dot-menu:hover { color:white; }
+        
+        /* Custom Dropdown Content */
+        .menu-options { 
+            display:none; position:absolute; right:10px; top:35px; 
+            background:#1e293b; border:1px solid #475569; 
+            border-radius:8px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
         }
-        .menu-trigger:hover { background: var(--border-ui); }
-
-        .chat-scroll-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 80px 15% 20px 15%; /* Responsive centering */
+        .menu-options.show { display:block; }
+        .menu-options button, .menu-options form button { 
+            width:100%; text-align:left; background:none; border:none; color:white; 
+            padding:8px 15px; font-size:14px; 
         }
+        .menu-options button:hover { background:#334155; }
 
-        /* Message Styling */
-        .user-box {
-            background: var(--accent-blue);
-            padding: 12px 20px;
-            border-radius: 15px 15px 0 15px;
-            margin: 15px 0 15px auto;
-            max-width: 80%;
-            width: fit-content;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .response-box {
-            background: #020617;
-            padding: 20px;
-            border-radius: 0 15px 15px 15px;
-            margin: 15px 0;
-            border: 1px solid var(--border-ui);
-            max-width: 85%;
-        }
-
-        /* --- INPUT AREA --- */
-        .input-container {
-            padding: 20px 15%;
-            background: var(--bg-body);
-            border-top: 1px solid var(--border-ui);
-        }
-
-        .custom-input-group {
-            background: var(--bg-card);
-            border: 1px solid var(--border-ui);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            padding: 5px 15px;
-        }
-
-        .custom-input-group input {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 10px;
-            flex: 1;
-        }
-        .custom-input-group input:focus { outline: none; }
-
-        /* --- SEARCH & HISTORY --- */
-        .history-item {
-            background: var(--bg-card);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-item:hover { border-color: var(--accent-blue); }
-
-        .highlight { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
-
-        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
-        .icon-btn:hover { color: white; }
-
+        .highlight { background:yellow; color:black; padding:2px; border-radius:3px; }
     </style>
 </head>
+<body>
 
-<body class="">
+<div id="mainIcon" class="main-icon">🤖</div>
 
-<div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
-
-<nav id="sidebar" class="sidebar">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="m-0">History</h5>
-        <button class="icon-btn" onclick="closeSidebar()">✖</button>
+<div id="sidebar" class="sidebar">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0">Conversations</h5>
+        <button class="btn text-white p-0" onclick="closeSidebar()">✖</button>
     </div>
 
-    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
-    
-    <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search chats...">
-    
-    <div class="flex-grow-1 overflow-auto">
+    <div class="sidebar-content flex-grow-1 overflow-auto">
+        <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Chat</a>
+        <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search...">
+        
         <div id="searchResults"></div>
         <div id="chatHistory">
             {% for conv in conversations %}
-                <div class="history-item">
-                    <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
-                        {{ conv[1] }}
-                    </a>
-                    <div class="d-flex">
-                        <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
-                        <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline">
-                            <button class="icon-btn">🗑</button>
-                        </form>
-                    </div>
+            <div class="history-box" id="item-{{ conv[0] }}">
+                <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate me-2">{{ conv[1] }}</a>
+                
+                <button class="dot-menu" onclick="toggleMenu(event, '{{ conv[0] }}')">⋮</button>
+                
+                <div class="menu-options" id="menu-{{ conv[0] }}">
+                    <button onclick="enableRename('{{ conv[0] }}')">✏️ Rename</button>
+                    <form method="POST" action="/delete_chat/{{ conv[0] }}">
+                        <button type="submit" class="text-danger">🗑 Delete</button>
+                    </form>
                 </div>
-                <form method="POST" action="/edit_chat/{{ conv[0] }}">
-                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Enter new name...">
-                </form>
+            </div>
+            <input id="rename-{{ conv[0] }}" class="form-control form-control-sm mb-2" style="display:none;" onkeydown="handleRename(event,'{{ conv[0] }}')">
             {% endfor %}
         </div>
     </div>
@@ -184,116 +94,94 @@
     <div class="pt-3 border-top border-secondary">
         <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
     </div>
-</nav>
+</div>
 
-<div class="main-wrapper">
-    <div id="chatBox" class="chat-scroll-area">
+<div class="chat-area">
+    <div id="chatBox" class="messages d-flex flex-column">
         {% for msg in chat %}
-            <div class="user-box">{{ msg.user }}</div>
-            
-            <div class="response-box">
-                {% if msg.type == "text" %}
-                    {{ msg.bot | safe }}
-                {% elif msg.type == "image" %}
-                    <div class="text-center">
-                        <img src="{{ msg.image }}" class="img-fluid rounded border border-secondary">
-                    </div>
-                {% endif %}
+            <div class="{{ 'user-box' if msg.role == 'user' else 'response-box' }}">
+                {% if msg.type == "text" %}{{ msg.bot | safe }}{% endif %}
+                {% if msg.type == "image" %}<img src="{{ msg.image }}" class="img-fluid rounded">{% endif %}
             </div>
         {% endfor %}
     </div>
 
-    <div class="input-container">
+    <div class="input-area">
         <form method="POST" action="/tool" enctype="multipart/form-data">
-            <div class="custom-input-group">
-                <button type="button" class="icon-btn">➕</button>
-                <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
-                <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
+            <div class="input-group">
+                <label class="btn btn-outline-light" for="fileInput" style="cursor:pointer;">
+                    ➕ <input type="file" id="fileInput" name="file" style="display:none;" onchange="console.log('File selected')">
+                </label>
+
+                <input class="form-control" id="chatInput" name="input" placeholder="Ask anything..." autocomplete="off">
+                
+                <button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
                 <button type="submit" class="btn btn-primary px-4">Send</button>
             </div>
         </form>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const sidebar = document.getElementById("sidebar");
-const menuTrigger = document.getElementById("menuTrigger");
-const chatBox = document.getElementById("chatBox");
-
-/* TOGGLE LOGIC */
-menuTrigger.onclick = () => {
-    sidebar.classList.add("open");
-    document.body.classList.add("sidebar-open");
-};
-
-function closeSidebar() {
-    sidebar.classList.remove("open");
-    document.body.classList.remove("sidebar-open");
-}
-
-/* AUTO-SCROLL TO BOTTOM */
-window.onload = () => {
-    chatBox.scrollTop = chatBox.scrollHeight;
-};
-
-/* SEARCH */
-searchBox.oninput = async () => {
-    let q = searchBox.value.trim();
-    if(q.length < 2) {
-        searchResults.innerHTML = "";
-        chatHistory.style.display = "block";
-        return;
-    }
-    chatHistory.style.display = "none";
-
-    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
-    let data = await res.json();
-    let html = "";
-
-    data.results.forEach(r => {
-        let text = r.snippet.replace(new RegExp(`(${q})`,"gi"), `<span class="highlight">$1</span>`);
-        html += `<div class="history-item" onclick="location.href='/chat/${r.conv_id}?msg=${r.msg_id}&q=${encodeURIComponent(q)}'">${text}</div>`;
-    });
-    searchResults.innerHTML = html;
-};
-
-/* RENAME */
-function enableRename(id) {
-    const el = document.getElementById("rename-" + id);
-    el.style.display = el.style.display === "none" ? "block" : "none";
-    el.focus();
-}
-
-/* VOICE */
-let isListening = false;
-const micBtn = document.getElementById("micBtn");
-
-micBtn.onclick = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Voice not supported");
-        return;
-    }
-
-    const recognition = new SpeechRecognition();
-    if(isListening) {
-        recognition.stop();
-        return;
-    }
-
-    recognition.start();
-    isListening = true;
-    micBtn.style.color = "red";
-
-    recognition.onresult = (e) => {
-        document.getElementById("chatInput").value = e.results[0][0].transcript;
+    const sidebar = document.getElementById("sidebar");
+    
+    document.getElementById("mainIcon").onclick = () => {
+        sidebar.classList.add("open");
+        document.body.classList.add("sidebar-open");
     };
 
-    recognition.onend = () => {
-        isListening = false;
-        micBtn.style.color = "#94a3b8";
+    function closeSidebar() {
+        sidebar.classList.remove("open");
+        document.body.classList.remove("sidebar-open");
+    }
+
+    // Toggle the 3-dot menu
+    function toggleMenu(event, id) {
+        event.stopPropagation();
+        // Close other menus
+        document.querySelectorAll('.menu-options').forEach(m => {
+            if(m.id !== 'menu-'+id) m.classList.remove('show');
+        });
+        document.getElementById('menu-'+id).classList.toggle('show');
+    }
+
+    // Close menus on outside click
+    window.onclick = () => {
+        document.querySelectorAll('.menu-options').forEach(m => m.classList.remove('show'));
     };
-};
+
+    function enableRename(id) {
+        document.getElementById("rename-"+id).style.display="block";
+    }
+
+    function handleRename(e,id){
+        if(e.key==="Enter"){
+            let val=e.target.value;
+            let form=document.createElement("form");
+            form.method="POST";
+            form.action="/edit_chat/"+id;
+            let i=document.createElement("input");
+            i.name="title"; i.value=val;
+            form.appendChild(i);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Mic Logic
+    let recognition;
+    const micBtn = document.getElementById("micBtn");
+    micBtn.onclick = () => {
+        if(!('webkitSpeechRecognition' in window)) return alert("Browser not supported");
+        recognition = new webkitSpeechRecognition();
+        recognition.start();
+        micBtn.style.color = "red";
+        recognition.onresult = (e) => {
+            document.getElementById("chatInput").value = e.results[0][0].transcript;
+        };
+        recognition.onend = () => micBtn.style.color = "white";
+    };
 </script>
 
 </body>

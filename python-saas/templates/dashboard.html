@@ -3,381 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI | Intelligent Interface</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>Professional AI Interface</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
         :root {
-            --bg-deep: #0f172a;
-            --bg-surface: #1e293b;
-            --accent-primary: #3b82f6;
-            --accent-hover: #2563eb;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-color: #334155;
-            --sidebar-width: 320px;
+            --sidebar-width: 300px;
+            --transition-speed: 0.3s;
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --accent-blue: #2563eb;
+            --border-ui: #334155;
         }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: #f8fafc;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
+            display: flex;
+            height: 100vh;
             overflow: hidden;
         }
 
-        /* --- Global UI Elements --- */
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-        }
-
-        .main-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1100;
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-
-        .main-toggle:hover { transform: scale(1.05); }
-
-        /* --- Sidebar --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--bg-deep);
-            border-right: 1px solid var(--border-color);
-            height: 100vh;
+            background: var(--bg-body);
+            border-right: 1px solid var(--border-ui);
+            height: 100%;
             position: fixed;
-            left: calc(-1 * var(--sidebar-width));
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1050;
+            left: calc(var(--sidebar-width) * -1);
+            transition: left var(--transition-speed);
             display: flex;
             flex-direction: column;
+            z-index: 1050;
+            padding: 1rem;
         }
 
         .sidebar.open { left: 0; }
 
-        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); }
-        
-        .sidebar-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-        }
-
-        .history-item {
-            position: relative;
-            background: transparent;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .history-item:hover { background: var(--bg-surface); }
-        .history-link { color: var(--text-main); text-decoration: none; flex: 1; font-size: 0.95rem; }
-
-        .action-group { opacity: 0; transition: opacity 0.2s; }
-        .history-item:hover .action-group { opacity: 1; }
-
-        /* --- Chat Area --- */
+        /* --- MAIN CONTENT AREA --- */
         .main-wrapper {
-            margin-left: 0;
-            height: 100vh;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            transition: margin-left 0.35s ease;
+            height: 100%;
+            margin-left: 0;
+            transition: margin-left var(--transition-speed);
+            position: relative;
         }
 
         body.sidebar-open .main-wrapper { margin-left: var(--sidebar-width); }
 
-        .chat-container {
+        /* --- UI ELEMENTS --- */
+        .menu-trigger {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--bg-card);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            border: 1px solid var(--border-ui);
+            transition: background 0.2s;
+        }
+        .menu-trigger:hover { background: var(--border-ui); }
+
+        .chat-scroll-area {
             flex: 1;
             overflow-y: auto;
-            padding: 80px 20% 40px 20%; /* Centered container look */
+            padding: 80px 15% 20px 15%; /* Responsive centering */
         }
 
-        @media (max-width: 992px) { .chat-container { padding: 80px 5% 40px 5%; } }
-
-        .msg-row { margin-bottom: 25px; display: flex; flex-direction: column; }
-        
-        .msg-user {
-            align-self: flex-end;
-            background: var(--accent-primary);
-            padding: 12px 18px;
-            border-radius: 18px 18px 2px 18px;
+        /* Message Styling */
+        .user-box {
+            background: var(--accent-blue);
+            padding: 12px 20px;
+            border-radius: 15px 15px 0 15px;
+            margin: 15px 0 15px auto;
             max-width: 80%;
-            font-weight: 500;
+            width: fit-content;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .msg-bot {
-            align-self: flex-start;
-            background: var(--bg-surface);
+        .response-box {
+            background: #020617;
             padding: 20px;
-            border-radius: 2px 18px 18px 18px;
-            border: 1px solid var(--border-color);
+            border-radius: 0 15px 15px 15px;
+            margin: 15px 0;
+            border: 1px solid var(--border-ui);
             max-width: 85%;
-            line-height: 1.6;
         }
 
-        /* --- Input Dock --- */
-        .input-dock {
-            padding: 20px 0;
-            background: linear-gradient(transparent, var(--bg-deep) 30%);
-        }
-
+        /* --- INPUT AREA --- */
         .input-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 10px;
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
+            padding: 20px 15%;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-ui);
         }
 
-        .chat-field {
+        .custom-input-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-ui);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
+
+        .custom-input-group input {
             background: transparent;
             border: none;
             color: white;
-            box-shadow: none !important;
+            padding: 10px;
+            flex: 1;
         }
+        .custom-input-group input:focus { outline: none; }
 
-        .chat-field:focus { background: transparent; color: white; }
-
-        .btn-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+        /* --- SEARCH & HISTORY --- */
+        .history-item {
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            transition: 0.2s;
         }
+        .history-item:hover { border-color: var(--accent-blue); }
 
-        .highlight { background: rgba(59, 130, 246, 0.4); color: white; border-radius: 2px; }
+        .highlight { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
+
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; }
+        .icon-btn:hover { color: white; }
+
     </style>
 </head>
 
-<body class="sidebar-open"> <button id="mainIcon" class="main-toggle">
-    <i class="bi bi-layout-sidebar-inset"></i>
-</button>
+<body class="">
 
-<aside id="sidebar" class="sidebar open">
-    <div class="sidebar-header d-flex justify-content-between align-items-center">
-        <h5 class="m-0 fw-bold"><i class="bi bi-cpu me-2"></i>Nexus AI</h5>
-        <button class="btn text-white p-0" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+<div id="menuTrigger" class="menu-trigger">🤖 Menu</div>
+
+<nav id="sidebar" class="sidebar">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0">History</h5>
+        <button class="icon-btn" onclick="closeSidebar()">✖</button>
     </div>
 
-    <div class="sidebar-content">
-        <a href="/new_chat" class="btn btn-primary w-100 mb-3 shadow-sm">
-            <i class="bi bi-plus-lg me-2"></i>New Session
-        </a>
-
-        <div class="mb-3">
-            <div class="input-group input-group-sm">
-                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
-                <input id="searchBox" class="form-control bg-dark border-secondary text-white" placeholder="Search memory...">
-            </div>
-        </div>
-
+    <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Conversation</a>
+    
+    <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search chats...">
+    
+    <div class="flex-grow-1 overflow-auto">
         <div id="searchResults"></div>
-
         <div id="chatHistory">
-            <label class="text-uppercase small text-muted fw-bold mb-2">Recent Chats</label>
             {% for conv in conversations %}
-            <div class="history-item">
-                <a href="/chat/{{ conv[0] }}" class="history-link text-truncate">
-                    {{ conv[1] }}
-                </a>
-                <div class="action-group">
-                    <button class="btn btn-sm text-muted p-1" onclick="enableRename('{{ conv[0] }}')"><i class="bi bi-pencil-square"></i></button>
-                    <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline">
-                        <button class="btn btn-sm text-danger p-1"><i class="bi bi-trash3"></i></button>
-                    </form>
+                <div class="history-item">
+                    <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate flex-grow-1">
+                        {{ conv[1] }}
+                    </a>
+                    <div class="d-flex">
+                        <button class="icon-btn" onclick="enableRename('{{ conv[0] }}')">✏️</button>
+                        <form method="POST" action="/delete_chat/{{ conv[0] }}" class="d-inline">
+                            <button class="icon-btn">🗑</button>
+                        </form>
+                    </div>
                 </div>
-            </div>
-            <input id="rename-{{ conv[0] }}" class="form-control form-control-sm mb-2 bg-dark text-white border-primary" 
-                   style="display:none;" onkeydown="handleRename(event,'{{ conv[0] }}')">
+                <form method="POST" action="/edit_chat/{{ conv[0] }}">
+                    <input id="rename-{{ conv[0] }}" name="title" class="form-control form-control-sm mb-2" style="display:none;" placeholder="Enter new name...">
+                </form>
             {% endfor %}
         </div>
     </div>
 
-    <div class="p-3 border-top border-secondary">
-        <a href="/logout" class="btn btn-sm btn-outline-danger w-100">Sign Out</a>
+    <div class="pt-3 border-top border-secondary">
+        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
     </div>
-</aside>
+</nav>
 
-<main class="main-wrapper">
-    <div id="chatBox" class="chat-container">
+<div class="main-wrapper">
+    <div id="chatBox" class="chat-scroll-area">
         {% for msg in chat %}
-            <div class="msg-row">
-                <div class="msg-user">{{ msg.user }}</div>
-            </div>
+            <div class="user-box">{{ msg.user }}</div>
             
-            <div class="msg-row">
-                <div class="msg-bot shadow-sm">
-                    {% if msg.type == "text" %}
-                        {{ msg.bot | safe }}
-                    {% elif msg.type == "image" %}
-                        <img src="{{ msg.image }}" class="rounded img-fluid border border-secondary mt-2">
-                    {% endif %}
-                </div>
+            <div class="response-box">
+                {% if msg.type == "text" %}
+                    {{ msg.bot | safe }}
+                {% elif msg.type == "image" %}
+                    <div class="text-center">
+                        <img src="{{ msg.image }}" class="img-fluid rounded border border-secondary">
+                    </div>
+                {% endif %}
             </div>
         {% endfor %}
     </div>
 
-    <footer class="input-dock">
-        <div class="container-fluid px-4">
-            <form method="POST" action="/tool" enctype="multipart/form-data" id="chatForm">
-                <div class="input-container shadow-lg">
-                    <button type="button" class="btn btn-circle text-muted" title="Upload File">
-                        <i class="bi bi-paperclip"></i>
-                    </button>
-                    
-                    <input class="form-control chat-field" id="chatInput" name="input" 
-                           placeholder="Describe your request..." autocomplete="off">
-
-                    <button type="button" id="micBtn" class="btn btn-circle text-muted" title="Voice Input">
-                        <i class="bi bi-mic"></i>
-                    </button>
-
-                    <button class="btn btn-primary btn-circle px-4" style="width: auto;">
-                        <i class="bi bi-send-fill me-2"></i>Send
-                    </button>
-                </div>
-            </form>
-            <p class="text-center small text-muted mt-2">Nexus AI may produce inaccurate information.</p>
-        </div>
-    </footer>
-</main>
+    <div class="input-container">
+        <form method="POST" action="/tool" enctype="multipart/form-data">
+            <div class="custom-input-group">
+                <button type="button" class="icon-btn">➕</button>
+                <input id="chatInput" name="input" placeholder="How can I help you today?" autocomplete="off">
+                <button type="button" id="micBtn" class="icon-btn me-2">🎤</button>
+                <button type="submit" class="btn btn-primary px-4">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
-    const sidebar = document.getElementById("sidebar");
-    const body = document.body;
-    const searchBox = document.getElementById("searchBox");
-    const searchResults = document.getElementById("searchResults");
-    const chatHistory = document.getElementById("chatHistory");
+const sidebar = document.getElementById("sidebar");
+const menuTrigger = document.getElementById("menuTrigger");
+const chatBox = document.getElementById("chatBox");
 
-    // Toggle Sidebar Functionality
-    function toggleSidebar() {
-        sidebar.classList.toggle("open");
-        body.classList.toggle("sidebar-open");
-    }
+/* TOGGLE LOGIC */
+menuTrigger.onclick = () => {
+    sidebar.classList.add("open");
+    document.body.classList.add("sidebar-open");
+};
 
-    document.getElementById("mainIcon").onclick = toggleSidebar;
+function closeSidebar() {
+    sidebar.classList.remove("open");
+    document.body.classList.remove("sidebar-open");
+}
 
-    // Intelligent Search
-    searchBox.oninput = async () => {
-        let q = searchBox.value.trim();
-        if(q.length < 2) {
-            searchResults.innerHTML = "";
-            chatHistory.classList.remove("d-none");
-            return;
-        }
-
-        chatHistory.classList.add("d-none");
-        try {
-            let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
-            let data = await res.json();
-            
-            let html = '<label class="text-uppercase small text-primary fw-bold mb-2">Search Results</label>';
-            data.results.forEach(r => {
-                let snippet = r.snippet.replace(new RegExp(`(${q})`, "gi"), `<span class="highlight">$1</span>`);
-                html += `
-                    <div class="history-item cursor-pointer" onclick="openChat(${r.conv_id},${r.msg_id},'${q}')">
-                        <div class="small text-truncate text-muted-50">${snippet}</div>
-                    </div>`;
-            });
-            searchResults.innerHTML = html;
-        } catch (err) { console.error("Search failed", err); }
-    };
-
-    function openChat(c, m, q) {
-        window.location.href = `/chat/${c}?msg=${m}&q=${encodeURIComponent(q)}`;
-    }
-
-    // Rename logic
-    function enableRename(id) {
-        const el = document.getElementById("rename-" + id);
-        el.style.display = "block";
-        el.focus();
-    }
-
-    function handleRename(e, id) {
-        if(e.key === "Enter") {
-            const val = e.target.value;
-            const form = document.createElement("form");
-            form.method = "POST";
-            form.action = "/edit_chat/" + id;
-            const i = document.createElement("input");
-            i.name = "title";
-            i.value = val;
-            form.appendChild(i);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-
-    // Modern Web Speech API
-    let recognition;
-    let isListening = false;
-    const micBtn = document.getElementById("micBtn");
-
-    micBtn.onclick = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Your browser does not support voice input.");
-            return;
-        }
-
-        if (isListening) {
-            recognition.stop();
-            return;
-        }
-
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            isListening = true;
-            micBtn.classList.add("text-danger");
-            micBtn.innerHTML = '<i class="bi bi-record-fill"></i>';
-        };
-
-        recognition.onresult = (e) => {
-            document.getElementById("chatInput").value = e.results[0][0].transcript;
-        };
-
-        recognition.onend = () => {
-            isListening = false;
-            micBtn.classList.remove("text-danger");
-            micBtn.innerHTML = '<i class="bi bi-mic"></i>';
-        };
-
-        recognition.start();
-    };
-
-    // Auto-scroll chat to bottom
-    const chatBox = document.getElementById("chatBox");
+/* AUTO-SCROLL TO BOTTOM */
+window.onload = () => {
     chatBox.scrollTop = chatBox.scrollHeight;
+};
+
+/* SEARCH */
+searchBox.oninput = async () => {
+    let q = searchBox.value.trim();
+    if(q.length < 2) {
+        searchResults.innerHTML = "";
+        chatHistory.style.display = "block";
+        return;
+    }
+    chatHistory.style.display = "none";
+
+    let res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+    let data = await res.json();
+    let html = "";
+
+    data.results.forEach(r => {
+        let text = r.snippet.replace(new RegExp(`(${q})`,"gi"), `<span class="highlight">$1</span>`);
+        html += `<div class="history-item" onclick="location.href='/chat/${r.conv_id}?msg=${r.msg_id}&q=${encodeURIComponent(q)}'">${text}</div>`;
+    });
+    searchResults.innerHTML = html;
+};
+
+/* RENAME */
+function enableRename(id) {
+    const el = document.getElementById("rename-" + id);
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    el.focus();
+}
+
+/* VOICE */
+let isListening = false;
+const micBtn = document.getElementById("micBtn");
+
+micBtn.onclick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Voice not supported");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    if(isListening) {
+        recognition.stop();
+        return;
+    }
+
+    recognition.start();
+    isListening = true;
+    micBtn.style.color = "red";
+
+    recognition.onresult = (e) => {
+        document.getElementById("chatInput").value = e.results[0][0].transcript;
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        micBtn.style.color = "#94a3b8";
+    };
+};
 </script>
 
 </body>

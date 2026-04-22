@@ -3,96 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional AI Tool</title>
+    <title>Nexus AI | Professional Interface</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background:#0f172a; color:#e2e8f0; font-family:'Segoe UI',sans-serif; margin:0; overflow:hidden; }
-        
-        /* Layout */
-        .sidebar { width:300px; background:#0f172a; border-right:1px solid #334155; height:100vh; position:fixed; left:-300px; transition:0.3s; z-index:1000; padding:15px; display:flex; flex-direction:column; }
-        .sidebar.open { left:0; }
-        .chat-area { display:flex; flex-direction:column; height:100vh; transition:0.3s; width:100%; }
-        body.sidebar-open .chat-area { margin-left:300px; width: calc(100% - 300px); }
+        :root {
+            --bg-dark: #09090b;
+            --bg-card: #18181b;
+            --accent: #3b82f6;
+            --border: #27272a;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+        }
 
-        /* UI Elements */
-        .main-icon { position:fixed; top:10px; left:10px; background:#1e293b; padding:8px 12px; border-radius:10px; cursor:pointer; z-index:1100; border:1px solid #334155; }
-        .messages { flex:1; overflow-y:auto; padding:60px 20px 20px; }
-        .input-area { padding:20px; background:#1e293b; border-top:1px solid #334155; }
-        
-        /* History Item with Dropdown */
-        .history-box { 
+        body { 
+            background: var(--bg-dark); 
+            color: var(--text-primary); 
+            font-family: system-ui, -apple-system, sans-serif; 
+            margin: 0; 
+            overflow: hidden; 
+        }
+
+        /* Smooth Sidebar */
+        .sidebar { 
+            width: 300px; 
+            background: var(--bg-card); 
+            border-right: 1px solid var(--border); 
+            height: 100vh; 
+            position: fixed; 
+            left: -300px; 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1000; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.open { transform: translateX(300px); }
+
+        /* Main Viewport */
+        .chat-area { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            width: 100%; 
+            max-width: 1000px;
+            margin: 0 auto;
             position: relative;
-            background:#1e293b; 
-            padding:10px 12px; 
-            border-radius:10px; 
-            margin-bottom:8px; 
-            display:flex; 
-            justify-content:space-between; 
-            align-items:center;
-            transition: 0.2s;
         }
-        .history-box:hover { background:#334155; }
-        
-        /* Chat Bubble Style */
-        .user-box { background:#1e40af; padding:12px; border-radius:12px; margin-top:10px; align-self: flex-end; max-width: 80%; }
-        .response-box { background:#020617; padding:15px; border-radius:12px; margin-top:10px; border:1px solid #334155; max-width: 85%; }
 
-        /* Menu Styling */
-        .dot-menu { background:none; border:none; color:#94a3b8; font-size:20px; line-height:1; cursor:pointer; padding:0 5px; }
-        .dot-menu:hover { color:white; }
-        
-        /* Custom Dropdown Content */
-        .menu-options { 
-            display:none; position:absolute; right:10px; top:35px; 
-            background:#1e293b; border:1px solid #475569; 
-            border-radius:8px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+        /* Icon Button */
+        .main-icon { 
+            position: fixed; top: 15px; left: 15px; 
+            background: var(--bg-card); 
+            border: 1px solid var(--border);
+            padding: 10px; border-radius: 12px; cursor: pointer; z-index: 1100;
+            transition: all 0.2s;
         }
-        .menu-options.show { display:block; }
-        .menu-options button, .menu-options form button { 
-            width:100%; text-align:left; background:none; border:none; color:white; 
-            padding:8px 15px; font-size:14px; 
-        }
-        .menu-options button:hover { background:#334155; }
+        .main-icon:hover { background: var(--border); border-color: var(--accent); }
 
-        .highlight { background:yellow; color:black; padding:2px; border-radius:3px; }
+        /* Messages Styling */
+        .messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 80px 20px 40px; 
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .user-box { 
+            align-self: flex-end; 
+            background: var(--accent); 
+            padding: 12px 18px; 
+            border-radius: 20px 20px 4px 20px; 
+            margin-bottom: 24px;
+            max-width: 80%;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .response-box { 
+            align-self: flex-start; 
+            background: transparent; 
+            padding: 0 10px; 
+            margin-bottom: 32px;
+            width: 100%;
+            border-left: 2px solid var(--border);
+            transition: border-color 0.3s;
+        }
+        .response-box:hover { border-left-color: var(--accent); }
+
+        /* Input Container */
+        .input-area { 
+            padding: 20px 40px 40px; 
+            background: linear-gradient(180deg, transparent 0%, var(--bg-dark) 20%);
+        }
+
+        .input-group-custom {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .input-group-custom:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+
+        .input-group-custom input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            flex: 1;
+            padding: 10px;
+            outline: none;
+        }
+
+        /* History Elements */
+        .history-box { 
+            background: rgba(255,255,255,0.03); 
+            padding: 10px 14px; 
+            border-radius: 8px; 
+            margin-bottom: 6px; 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .history-box a { color: var(--text-secondary); text-decoration: none; }
+        .history-box:hover { background: rgba(255,255,255,0.08); }
+
+        /* Utility */
+        .btn-action { color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 5px; }
+        .btn-action:hover { color: var(--text-primary); }
+        .btn-send { background: var(--accent); border: none; border-radius: 8px; color: white; padding: 6px 16px; font-weight: 500; }
+
+        @media (max-width: 768px) {
+            .input-area { padding: 10px 15px 25px; }
+            .chat-area { width: 95%; }
+        }
     </style>
 </head>
 <body>
 
-<div id="mainIcon" class="main-icon">🤖</div>
+<div id="mainIcon" class="main-icon">
+    <svg width="20" height="20" fill="white" viewBox="0 0 16 16">
+        <path d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+    </svg>
+</div>
 
 <div id="sidebar" class="sidebar">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="m-0">Conversations</h5>
-        <button class="btn text-white p-0" onclick="closeSidebar()">✖</button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <span class="fw-bold tracking-tight">DASHBOARD</span>
+        <button class="btn-action" onclick="closeSidebar()">✕</button>
     </div>
 
-    <div class="sidebar-content flex-grow-1 overflow-auto">
-        <a href="/new_chat" class="btn btn-primary w-100 mb-3">+ New Chat</a>
-        <input id="searchBox" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Search...">
+    <div class="flex-grow-1 overflow-auto pe-2">
+        <a href="/new_chat" class="btn btn-outline-light w-100 mb-4 py-2" style="border-radius: 10px; border-color: var(--border); font-size: 0.9rem;">+ New Session</a>
         
-        <div id="searchResults"></div>
         <div id="chatHistory">
             {% for conv in conversations %}
             <div class="history-box" id="item-{{ conv[0] }}">
-                <a href="/chat/{{ conv[0] }}" class="text-white text-decoration-none text-truncate me-2">{{ conv[1] }}</a>
-                
-                <button class="dot-menu" onclick="toggleMenu(event, '{{ conv[0] }}')">⋮</button>
-                
-                <div class="menu-options" id="menu-{{ conv[0] }}">
-                    <button onclick="enableRename('{{ conv[0] }}')">✏️ Rename</button>
-                    <form method="POST" action="/delete_chat/{{ conv[0] }}">
-                        <button type="submit" class="text-danger">🗑 Delete</button>
-                    </form>
-                </div>
+                <a href="/chat/{{ conv[0] }}" class="text-truncate me-2">{{ conv[1] }}</a>
+                <button class="btn-action" onclick="toggleMenu(event, '{{ conv[0] }}')">⋮</button>
             </div>
-            <input id="rename-{{ conv[0] }}" class="form-control form-control-sm mb-2" style="display:none;" onkeydown="handleRename(event,'{{ conv[0] }}')">
             {% endfor %}
         </div>
     </div>
 
     <div class="pt-3 border-top border-secondary">
-        <a href="/logout" class="btn btn-outline-danger w-100">Logout</a>
+        <a href="/logout" class="text-danger text-decoration-none small">End Session</a>
     </div>
 </div>
 
@@ -101,87 +182,66 @@
         {% for msg in chat %}
             <div class="{{ 'user-box' if msg.role == 'user' else 'response-box' }}">
                 {% if msg.type == "text" %}{{ msg.bot | safe }}{% endif %}
-                {% if msg.type == "image" %}<img src="{{ msg.image }}" class="img-fluid rounded">{% endif %}
+                {% if msg.type == "image" %}<img src="{{ msg.image }}" class="img-fluid rounded-3 mt-2 border border-secondary">{% endif %}
             </div>
         {% endfor %}
     </div>
 
     <div class="input-area">
-        <form method="POST" action="/tool" enctype="multipart/form-data">
-            <div class="input-group">
-                <label class="btn btn-outline-light" for="fileInput" style="cursor:pointer;">
-                    ➕ <input type="file" id="fileInput" name="file" style="display:none;" onchange="console.log('File selected')">
+        <form method="POST" action="/tool" enctype="multipart/form-data" id="chatForm">
+            <div class="input-group-custom">
+                <label for="fileInput" class="btn-action me-2">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.159 1.43-1.159 2.333v.5h-.5C2.002 4.933 1 5.999 1 7.291 1 8.791 2.209 10 3.708 10H5a.5.5 0 0 1 0 1H3.708C1.659 11 0 9.341 0 7.291c0-1.852 1.348-3.393 3.126-3.727 1.057-2.257 3.232-3.834 5.753-3.834z"/></svg>
+                    <input type="file" id="fileInput" name="file" style="display:none;">
                 </label>
 
-                <input class="form-control" id="chatInput" name="input" placeholder="Ask anything..." autocomplete="off">
+                <input id="chatInput" name="input" placeholder="Enter message..." autocomplete="off">
                 
-                <button type="button" id="micBtn" class="btn btn-outline-light">🎤</button>
-                <button type="submit" class="btn btn-primary px-4">Send</button>
+                <button type="button" id="micBtn" class="btn-action mx-2">🎤</button>
+                <button type="submit" class="btn-send">Send</button>
             </div>
         </form>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const sidebar = document.getElementById("sidebar");
-    
-    document.getElementById("mainIcon").onclick = () => {
-        sidebar.classList.add("open");
-        document.body.classList.add("sidebar-open");
+    const mainIcon = document.getElementById("mainIcon");
+    const chatBox = document.getElementById("chatBox");
+
+    // Toggle Sidebar with smooth transform
+    mainIcon.onclick = () => {
+        sidebar.classList.toggle("open");
     };
 
     function closeSidebar() {
         sidebar.classList.remove("open");
-        document.body.classList.remove("sidebar-open");
     }
 
-    // Toggle the 3-dot menu
-    function toggleMenu(event, id) {
-        event.stopPropagation();
-        // Close other menus
-        document.querySelectorAll('.menu-options').forEach(m => {
-            if(m.id !== 'menu-'+id) m.classList.remove('show');
-        });
-        document.getElementById('menu-'+id).classList.toggle('show');
+    // Auto-scroll logic
+    function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
-
-    // Close menus on outside click
-    window.onclick = () => {
-        document.querySelectorAll('.menu-options').forEach(m => m.classList.remove('show'));
-    };
-
-    function enableRename(id) {
-        document.getElementById("rename-"+id).style.display="block";
-    }
-
-    function handleRename(e,id){
-        if(e.key==="Enter"){
-            let val=e.target.value;
-            let form=document.createElement("form");
-            form.method="POST";
-            form.action="/edit_chat/"+id;
-            let i=document.createElement("input");
-            i.name="title"; i.value=val;
-            form.appendChild(i);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
+    window.onload = scrollToBottom;
 
     // Mic Logic
     let recognition;
     const micBtn = document.getElementById("micBtn");
     micBtn.onclick = () => {
-        if(!('webkitSpeechRecognition' in window)) return alert("Browser not supported");
+        if(!('webkitSpeechRecognition' in window)) return alert("Voice input not supported in this browser.");
         recognition = new webkitSpeechRecognition();
         recognition.start();
-        micBtn.style.color = "red";
+        micBtn.style.color = "#ef4444";
         recognition.onresult = (e) => {
             document.getElementById("chatInput").value = e.results[0][0].transcript;
         };
-        recognition.onend = () => micBtn.style.color = "white";
+        recognition.onend = () => micBtn.style.color = "var(--text-secondary)";
     };
+
+    // Close sidebar on escape key
+    document.addEventListener('keydown', (e) => {
+        if(e.key === "Escape") closeSidebar();
+    });
 </script>
 
 </body>

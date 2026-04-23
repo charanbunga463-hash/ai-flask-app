@@ -368,14 +368,32 @@ def logout():
 def home():
     if "user" not in session:
         return redirect("/login")
-    session.pop("conv_id", None)
-    conn = get_db(); c = conn.cursor()
-    c.execute("SELECT id, title, mode FROM conversations WHERE username=%s ORDER BY id DESC", (session["user"],))
-    convs = c.fetchall()
-    c.execute("SELECT id, title, created_at FROM notes WHERE username=%s ORDER BY id DESC LIMIT 20", (session["user"],))
-    notes_list = c.fetchall()
-    conn.close()
-    return render_template("dashboard.html", chat=[], conversations=convs, active_chat=None, notes_list=notes_list)
+
+    try:
+        conn = get_db()
+        c = conn.cursor()
+
+        # SAFE queries
+        c.execute("SELECT id, title, mode FROM conversations WHERE username=%s", (session["user"],))
+        convs = c.fetchall()
+
+        c.execute("SELECT id, title, created_at FROM notes WHERE username=%s", (session["user"],))
+        notes_list = c.fetchall()
+
+        conn.close()
+
+    except Exception as e:
+        print("DASHBOARD ERROR:", e)
+        convs = []
+        notes_list = []
+
+    return render_template(
+        "dashboard.html",
+        chat=[],
+        conversations=convs,
+        active_chat=None,
+        notes_list=notes_list
+    )
 
 
 @app.route("/new_chat")

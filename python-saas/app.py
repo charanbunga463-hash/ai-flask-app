@@ -434,49 +434,29 @@ def tool():
     if "user" not in session:
         return redirect("/login")
 
-    user_input = request.form.get("input", "").strip()
-    file       = request.files.get("file")
-    conn = get_db(); c = conn.cursor()
-    conv_id = session.get("conv_id")
+    try:
+        user_input = request.form.get("input", "").strip()
+        conn = get_db()
+        c = conn.cursor()
 
-    if not conv_id:
-        title = generate_chat_title(user_input or "New Chat")
-        c.execute("INSERT INTO conversations (username, title, mode) VALUES (%s,%s,'chat') RETURNING id",
-                  (session["user"], title))
-        conv_id = c.fetchone()[0]
-        session["conv_id"] = conv_id
-        conn.commit()
+        conv_id = session.get("conv_id")
 
-    extracted = ""
-    if file and file.filename:
-        fname = file.filename.lower()
-        if fname.endswith(".pdf"):
-            try:
-                with pdfplumber.open(file) as pdf:
-                    for page in pdf.pages:
-                        extracted += (page.extract_text() or "")
-            except Exception as e:
-                extracted = f"[PDF read error: {e}]"
-        elif OCR_AVAILABLE and any(fname.endswith(x) for x in [".png",".jpg",".jpeg",".webp",".bmp"]):
-            try:
-                img = Image.open(file)
-                extracted = pytesseract.image_to_string(img)
-            except Exception as e:
-                extracted = f"[Image OCR error: {e}]"
+        if not conv_id:
+            title = generate_chat_title(user_input or "New Chat")
+            c.execute("INSERT INTO conversations (username, title) VALUES (%s,%s) RETURNING id",
+                      (session["user"], title))
+            conv_id = c.fetchone()[0]
+            session["conv_id"] = conv_id
+            conn.commit()
 
-    final_prompt = f"{user_input}\n\n{extracted}".strip()
+        session["pending_prompt"] = user_input
 
-    if user_input and any(k in user_input.lower() for k in
-        ["generate image","draw","create image","picture of","photo of","illustration of"]) and not file:
-        img_url = generate_image_url(user_input)
-        c.execute("INSERT INTO chats (conversation_id,username,user_msg,bot_msg,type) VALUES (%s,%s,%s,%s,'image')",
-                  (conv_id, session["user"], user_input, img_url))
-        conn.commit(); conn.close()
-        return redirect(f"/chat/{conv_id}")
+        conn.close()
+        return redirect(f"/chat/{conv_id}?do_stream=true")
 
-    session["pending_prompt"] = final_prompt
-    conn.commit(); conn.close()
-    return redirect(f"/chat/{conv_id}?do_stream=true")
+    except Exception as e:
+        print("TOOL ERROR:", e)
+        return "Tool Error", 500
 
 
 @app.route("/stream")

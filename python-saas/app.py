@@ -48,17 +48,6 @@ MODEL       = "llama-3.1-8b-instant"
 MODEL_LARGE = "llama-3.3-70b-versatile"
 
 
-@app.route("/generate_image", methods=["POST"])
-def generate_image():
-    prompt = request.form.get("prompt", "")
-
-    if not prompt:
-        return jsonify({"error": "No prompt provided"}), 400
-
-    url = generate_image_url(prompt)
-
-    return jsonify({"image_url": url})
-
 
 # ════════════════════════════════════════════
 #  AI HELPERS

@@ -173,7 +173,7 @@ header{
     {% set badge_class = 'long' if 'long' in qtype else ('tf' if 'true' in qtype or 'false' in qtype else ('fill' if 'fill' in qtype else 'short')) %}
     {% set badge_label = 'LONG' if 'long' in qtype else ('T/F' if 'true' in qtype or 'false' in qtype else ('FILL' if 'fill' in qtype else 'SHORT')) %}
     <div class="qa-card" id="qa-{{ loop.index0 }}">
-      <div class="qa-q"onclick="toggleQA({{ loop.index0 }})">
+      <div class="qa-q" onclick="toggleQA({{ loop.index0 }})">
         <span class="qa-num">{{ loop.index }}</span>
         <span style="flex:1">{{ item.q }}</span>
         <span class="qa-badge {{ badge_class }}">{{ badge_label }}</span>

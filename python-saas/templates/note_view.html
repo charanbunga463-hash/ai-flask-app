@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuraAI — {{ note.title }}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b0e18;--void:#06080e;--surface:#111626;--raised:#181e2f;
+  --border:rgba(255,255,255,0.06);--text:#d8e2f2;--muted:#3e4e62;--soft:#7a90a8;
+  --teal:#00d4aa;--tealglow:rgba(0,212,170,0.22);
+  --violet:#7c5cfc;--orange:#ff6b35;--gold:#f5c842;--red:#ff4757;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--raised);border-radius:9px;}
+
+header{
+  background:var(--void);border-bottom:1px solid var(--border);
+  padding:13px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;
+}
+.hlogo{
+  width:30px;height:30px;background:var(--teal);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--void);
+  box-shadow:0 0 10px var(--tealglow);text-decoration:none;flex-shrink:0;
+}
+.htitle{font-family:'Syne',sans-serif;font-size:0.84rem;font-weight:700;
+  color:var(--soft);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hactions{display:flex;gap:8px;flex-shrink:0;}
+.hbtn{
+  display:flex;align-items:center;gap:6px;padding:7px 13px;
+  border-radius:8px;font-size:0.77rem;font-weight:700;
+  font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;
+  border:none;transition:opacity 0.15s;
+}
+.hbtn-back{background:var(--surface);border:1px solid var(--border);color:var(--soft);}
+.hbtn-back:hover{background:var(--raised);color:var(--text);}
+.hbtn-pdf{background:var(--teal);color:var(--void);}
+.hbtn-pdf:hover{opacity:0.85;}
+
+.page{max-width:800px;margin:0 auto;padding:28px 22px 48px;}
+
+.note-hero{
+  background:linear-gradient(135deg,rgba(124,92,252,0.12),rgba(0,212,170,0.07));
+  border:1px solid rgba(124,92,252,0.2);border-radius:14px;
+  padding:22px 24px;margin-bottom:22px;
+}
+.note-hero h1{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;
+  letter-spacing:-0.04em;margin-bottom:5px;}
+.note-hero time{font-size:0.71rem;color:var(--muted);font-family:'Space Mono',monospace;}
+
+.section{margin-bottom:22px;}
+.sec-title{
+  font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:0.09em;color:var(--violet);
+  margin-bottom:10px;
+}
+.summary{
+  background:var(--surface);border-left:3px solid var(--teal);
+  border-radius:0 9px 9px 0;padding:13px 16px;
+  font-size:0.85rem;line-height:1.68;color:var(--text);
+}
+.kp-list{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.kp-list li{
+  display:flex;align-items:flex-start;gap:9px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:9px 13px;font-size:0.84rem;line-height:1.5;
+}
+.kp-list li::before{content:"•";color:var(--teal);font-weight:700;flex-shrink:0;margin-top:1px;}
+
+.qa-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:9px;overflow:hidden;
+}
+.qa-q{
+  padding:12px 15px;font-size:0.85rem;font-weight:600;line-height:1.5;
+  cursor:pointer;display:flex;align-items:flex-start;gap:9px;
+  transition:background 0.15s;
+}
+.qa-q:hover{background:rgba(255,255,255,0.025);}
+.qa-num{
+  min-width:24px;height:24px;border-radius:7px;
+  background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);
+  color:var(--teal);font-family:'Space Mono',monospace;
+  font-size:0.68rem;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.qa-badge{padding:2px 7px;border-radius:4px;font-size:0.59rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;margin-top:3px;}
+.qa-badge.short{background:rgba(0,212,170,0.15);color:var(--teal);}
+.qa-badge.long{background:rgba(255,107,53,0.15);color:var(--orange);}
+.qa-badge.tf{background:rgba(124,92,252,0.15);color:var(--violet);}
+.qa-badge.fill{background:rgba(245,200,66,0.15);color:var(--gold);}
+.qa-chevron{margin-left:auto;color:var(--muted);flex-shrink:0;transition:transform 0.2s;}
+.qa-card.open .qa-chevron{transform:rotate(180deg);}
+.qa-a{padding:0 15px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.2s ease;}
+.qa-card.open .qa-a{max-height:600px;padding:0 15px 13px;}
+.qa-a-inner{
+  background:var(--raised);border-left:2px solid var(--teal);
+  border-radius:0 7px 7px 0;padding:10px 13px;
+  font-size:0.82rem;line-height:1.65;color:var(--soft);
+}
+.dl-footer{
+  text-align:center;margin-top:32px;padding:22px;
+  background:linear-gradient(135deg,rgba(0,212,170,0.06),rgba(124,92,252,0.06));
+  border:1px solid var(--border);border-radius:14px;
+}
+.dl-footer p{font-size:0.84rem;color:var(--soft);margin-bottom:14px;}
+.dl-big{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;background:var(--teal);border:none;border-radius:10px;
+  color:var(--void);font-family:'Syne',sans-serif;font-weight:800;
+  font-size:0.95rem;text-decoration:none;cursor:pointer;
+  transition:opacity 0.15s;box-shadow:0 4px 16px var(--tealglow);
+}
+.dl-big:hover{opacity:0.85;}
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="hlogo">A</a>
+  <span class="htitle">{{ note.title }}</span>
+  <div class="hactions">
+    <a href="/notes" class="hbtn hbtn-back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      All Notes
+    </a>
+    <a href="/notes/{{ note_id }}/pdf" class="hbtn hbtn-pdf">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download PDF
+    </a>
+  </div>
+</header>
+
+<div class="page">
+  <div class="note-hero">
+    <h1>{{ note.title }}</h1>
+    {% if created_at %}<time>Created {{ created_at.strftime('%d %B %Y at %H:%M') }}</time>{% endif %}
+  </div>
+
+  {% if note.summary %}
+  <div class="section">
+    <div class="sec-title">📋 Overview</div>
+    <div class="summary">{{ note.summary }}</div>
+  </div>
+  {% endif %}
+
+  {% if note.key_points %}
+  <div class="section">
+    <div class="sec-title">🔑 Key Points</div>
+    <ul class="kp-list">
+      {% for pt in note.key_points %}
+      <li>{{ pt }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if note.questions %}
+  <div class="section">
+    <div class="sec-title">❓ Questions &amp; Answers ({{ note.questions|length }})</div>
+    {% for item in note.questions %}
+    {% set qtype = item.type|lower if item.type else 'short' %}
+    {% set badge_class = 'long' if 'long' in qtype else ('tf' if 'true' in qtype or 'false' in qtype else ('fill' if 'fill' in qtype else 'short')) %}
+    {% set badge_label = 'LONG' if 'long' in qtype else ('T/F' if 'true' in qtype or 'false' in qtype else ('FILL' if 'fill' in qtype else 'SHORT')) %}
+    <div class="qa-card" id="qa-{{ loop.index0 }}">
+      <div class="qa-q" onclick="toggleQA({{ loop.index0 }})">
+        <span class="qa-num">{{ loop.index }}</span>
+        <span style="flex:1">{{ item.q }}</span>
+        <span class="qa-badge {{ badge_class }}">{{ badge_label }}</span>
+        <span class="qa-chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-a-inner">{{ item.a }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="dl-footer">
+    <p>Export these notes as a beautifully formatted PDF to study offline or share</p>
+    <a href="/notes/{{ note_id }}/pdf" class="dl-big">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download as PDF
+    </a>
+  </div>
+</div>
+
+<script>
+function toggleQA(i){
+  document.getElementById('qa-'+i).classList.toggle('open');
+}
+</script>
+</body>
+</html>

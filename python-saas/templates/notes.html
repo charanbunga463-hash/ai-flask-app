@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuraAI — My Notes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b0e18;--void:#06080e;--surface:#111626;--raised:#181e2f;
+  --border:rgba(255,255,255,0.06);--text:#d8e2f2;--muted:#3e4e62;--soft:#7a90a8;
+  --teal:#00d4aa;--tealglow:rgba(0,212,170,0.22);
+  --violet:#7c5cfc;--red:#ff4757;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--raised);border-radius:9px;}
+
+header{
+  background:var(--void);border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;gap:14px;
+}
+.hlogo{
+  width:32px;height:32px;background:var(--teal);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--void);
+  box-shadow:0 0 12px var(--tealglow);text-decoration:none;flex-shrink:0;
+}
+.hbrand{font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;
+  color:var(--text);text-decoration:none;}
+.hbrand span{color:var(--teal);}
+.hback{margin-left:auto;display:flex;align-items:center;gap:6px;
+  padding:7px 14px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;color:var(--soft);font-size:0.79rem;font-weight:600;
+  text-decoration:none;transition:all 0.18s;}
+.hback:hover{background:var(--raised);border-color:rgba(255,255,255,0.12);color:var(--text);}
+
+.page{max-width:900px;margin:0 auto;padding:32px 24px;}
+
+.page-title{
+  font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;
+  letter-spacing:-0.04em;margin-bottom:6px;
+}
+.page-title span{color:var(--violet);}
+.page-sub{font-size:0.86rem;color:var(--soft);margin-bottom:28px;}
+
+.empty{
+  background:var(--surface);border:2px dashed var(--border);
+  border-radius:14px;padding:48px 24px;text-align:center;
+}
+.empty-icon{font-size:36px;margin-bottom:12px;}
+.empty h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:6px;}
+.empty p{font-size:0.84rem;color:var(--soft);margin-bottom:18px;}
+.btn-back{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 22px;
+  background:linear-gradient(135deg,var(--violet),#5e3ed8);
+  border:none;border-radius:10px;color:#fff;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:0.87rem;
+  text-decoration:none;cursor:pointer;
+  transition:opacity 0.18s;
+}
+.btn-back:hover{opacity:0.85;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.note-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  transition:border-color 0.18s,transform 0.18s;
+}
+.note-card:hover{border-color:rgba(124,92,252,0.35);transform:translateY(-2px);}
+.note-card-top{
+  background:linear-gradient(135deg,rgba(124,92,252,0.12),rgba(0,212,170,0.06));
+  padding:14px 16px 12px;border-bottom:1px solid var(--border);
+}
+.note-card-top h3{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:800;
+  margin-bottom:3px;line-height:1.3;}
+.note-card-top time{font-size:0.69rem;color:var(--muted);font-family:'Space Mono',monospace;}
+.note-card-actions{padding:10px 14px;display:flex;gap:7px;}
+.nc-btn{
+  flex:1;padding:7px 6px;border-radius:7px;font-size:0.76rem;font-weight:700;
+  font-family:'DM Sans',sans-serif;cursor:pointer;border:none;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:opacity 0.15s;
+}
+.nc-view{background:rgba(124,92,252,0.12);color:var(--violet);
+  border:1px solid rgba(124,92,252,0.25);}
+.nc-view:hover{background:rgba(124,92,252,0.2);}
+.nc-dl{background:var(--teal);color:var(--void);}
+.nc-dl:hover{opacity:0.85;}
+.nc-del{background:rgba(255,71,87,0.09);color:var(--red);
+  border:1px solid rgba(255,71,87,0.2);flex:0;padding:7px 9px;}
+.nc-del:hover{background:rgba(255,71,87,0.17);}
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="hlogo">A</a>
+  <a href="/" class="hbrand">Aura<span>AI</span></a>
+  <a href="/" class="hback">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    Back to Chat
+  </a>
+</header>
+
+<div class="page">
+  <div class="page-title">My <span>Notes</span></div>
+  <div class="page-sub">All your AI-generated study notes and Q&amp;A documents</div>
+
+  {% if not notes_list %}
+  <div class="empty">
+    <div class="empty-icon">📄</div>
+    <h3>No notes yet</h3>
+    <p>Go to the dashboard, click <strong>Notes & Q&A Generator</strong>, and upload a PDF or image to create your first notes set.</p>
+    <a href="/" class="btn-back">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      Generate Notes
+    </a>
+  </div>
+  {% else %}
+  <div class="grid">
+    {% for note in notes_list %}
+    <div class="note-card">
+      <div class="note-card-top">
+        <h3>{{ note[1] }}</h3>
+        <time>{{ note[2].strftime('%d %b %Y, %H:%M') if note[2] else '' }}</time>
+      </div>
+      <div class="note-card-actions">
+        <a href="/notes/{{ note[0] }}" class="nc-btn nc-view">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View
+        </a>
+        <a href="/notes/{{ note[0] }}/pdf" class="nc-btn nc-dl">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          PDF
+        </a>
+        <form method="POST" action="/notes/{{ note[0] }}/delete"
+              onsubmit="return confirm('Delete this note?')">
+          <button type="submit" class="nc-btn nc-del" title="Delete">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuraAI — Login</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#06080e;--surface:#0f1220;--raised:#161b2a;
+  --border:rgba(255,255,255,0.08);--text:#d4dff0;--muted:#3a4a5e;--soft:#7080a0;
+  --teal:#00d4aa;--tealdim:rgba(0,212,170,0.1);--tealglow:rgba(0,212,170,0.22);
+  --red:#ff4757;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;display:flex;align-items:center;
+  justify-content:center;padding:20px;}
+
+/* background mesh */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 80%, rgba(0,212,170,0.05), transparent),
+    radial-gradient(ellipse 500px 300px at 80% 20%, rgba(124,92,252,0.05), transparent);
+  pointer-events:none;
+}
+
+.card{
+  position:relative;z-index:1;
+  width:100%;max-width:400px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:36px 32px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.4);
+}
+
+.card-top{text-align:center;margin-bottom:28px;}
+.logo-wrap{
+  width:52px;height:52px;background:var(--teal);border-radius:13px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#06080e;
+  box-shadow:0 0 24px var(--tealglow);margin-bottom:14px;
+}
+.card-top h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;
+  letter-spacing:-0.04em;margin-bottom:5px;}
+.card-top h1 span{color:var(--teal);}
+.card-top p{font-size:0.84rem;color:var(--soft);}
+
+.field{margin-bottom:15px;}
+.field label{display:block;font-size:0.67rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:5px;}
+.field input{
+  width:100%;background:var(--raised);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-family:'Space Mono',monospace;font-size:0.84rem;
+  padding:11px 13px;outline:none;
+  transition:border-color 0.18s;
+}
+.field input:focus{border-color:var(--teal);}
+.field input::placeholder{color:var(--muted);}
+
+.show-pw{display:flex;align-items:center;gap:7px;margin-bottom:18px;cursor:pointer;
+  font-size:0.79rem;color:var(--soft);}
+.show-pw input{width:15px;height:15px;accent-color:var(--teal);cursor:pointer;}
+
+.err{
+  background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.28);
+  border-radius:8px;padding:9px 13px;font-size:0.8rem;color:var(--red);
+  margin-bottom:15px;text-align:center;
+}
+
+.btn{
+  width:100%;background:var(--teal);border:none;color:#06080e;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:0.93rem;
+  padding:12px;border-radius:10px;cursor:pointer;letter-spacing:-0.01em;
+  transition:opacity 0.18s,transform 0.18s;
+  box-shadow:0 4px 16px var(--tealglow);
+}
+.btn:hover{opacity:0.86;transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+
+.card-foot{text-align:center;margin-top:20px;font-size:0.81rem;color:var(--soft);}
+.card-foot a{color:var(--teal);text-decoration:none;font-weight:600;}
+.card-foot a:hover{text-decoration:underline;}
+
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:0.74rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-top">
+    <div class="logo-wrap">A</div>
+    <h1>Welcome to <span>AuraAI</span></h1>
+    <p>Sign in to your AI workspace</p>
+  </div>
+
+  <form method="POST">
+    <div class="field">
+      <label>Username</label>
+      <input name="username" placeholder="Enter username" required autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="pwd" type="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+    </div>
+
+    <label class="show-pw">
+      <input type="checkbox" onchange="document.getElementById('pwd').type=this.checked?'text':'password'">
+      Show password
+    </label>
+
+    {% if error %}
+    <div class="err">⚠ {{ error }}</div>
+    {% endif %}
+
+    <button type="submit" class="btn">Sign In →</button>
+  </form>
+
+  <div class="divider">new here?</div>
+
+  <div class="card-foot">
+    <a href="/register">Create a free account</a>
+  </div>
+</div>
+</body>
+</html>

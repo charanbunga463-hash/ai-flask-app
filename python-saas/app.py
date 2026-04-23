@@ -272,7 +272,10 @@ def build_notes_pdf(data: dict) -> bytes:
 # ════════════════════════════════════════════
 
 def get_db():
-    return psycopg2.connect(DATABASE_URL)
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL missing")
+
+    return psycopg2.connect(DATABASE_URL, sslmode="require")
 
 
 def init_db():
@@ -302,7 +305,6 @@ def init_db():
     conn.close()
 
 
-init_db()
 
 
 # ════════════════════════════════════════════
@@ -693,4 +695,5 @@ def quick_pdf():
 
 # ════════════════════════════════════════════
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True, host="0.0.0.0", port=5000)

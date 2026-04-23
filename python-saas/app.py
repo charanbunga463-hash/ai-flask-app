@@ -489,17 +489,47 @@ def stream():
     username = session["user"]
 
     def generate():
+        if not client:
+            yield "data: AI not configured\n\n"
+            return
+
+        if not conv_id:
+            yield "data: Conversation error\n\n"
+            return
+
         full = []
-        for chunk in query_ai_stream(prompt):
-            full.append(chunk)
-            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
-        complete  = "".join(full)
-        formatted = markdown.markdown(complete, extensions=["tables", "fenced_code"])
-        conn = get_db(); c = conn.cursor()
-        c.execute("INSERT INTO chats (conversation_id,username,user_msg,bot_msg,type) VALUES (%s,%s,%s,%s,'text')",
-                  (conv_id, username, prompt, formatted))
-        conn.commit(); conn.close()
-        yield "data: [DONE]\n\n"
+
+        try:
+            for chunk in query_ai_stream(prompt):
+                full.append(chunk)
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            complete = "".join(full)
+
+            try:
+                formatted = markdown.markdown(complete)
+            except:
+                formatted = complete
+
+            try:
+                conn = get_db()
+                c = conn.cursor()
+
+                c.execute("""INSERT INTO chats 
+                    (conversation_id,username,user_msg,bot_msg,type)
+                    VALUES (%s,%s,%s,%s,'text')""",
+                    (conv_id, username, prompt, formatted))
+
+                conn.commit()
+                conn.close()
+
+            except Exception as e:
+                print("DB ERROR:", e)
+
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            yield f"data: Error: {str(e)}\n\n"
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream")
 

@@ -45,7 +45,7 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 MODEL       = "llama-3.1-8b-instant"
-MODEL_LARGE = "llama3-70b-8192"
+MODEL_LARGE = "llama-3.1-70b-versatile"
 
 
 # ════════════════════════════════════════════

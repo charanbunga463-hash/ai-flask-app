@@ -413,7 +413,7 @@ def open_chat(conv_id):
     session["conv_id"] = conv_id
     c.execute("SELECT user_msg, bot_msg, type FROM chats WHERE conversation_id=%s ORDER BY id", (conv_id,))
     rows = c.fetchall()
-    c.execute("SELECT id, title, mode FROM conversations WHERE username=%s ORDER BY id DESC", (session["user"],))
+    c.execute("SELECT id, title FROM conversations WHERE username=%s ORDER BY id DESC", (session["user"],))
     convs = c.fetchall()
     c.execute("SELECT id, title, created_at FROM notes WHERE username=%s ORDER BY id DESC LIMIT 20", (session["user"],))
     notes_list = c.fetchall()

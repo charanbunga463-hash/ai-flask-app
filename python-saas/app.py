@@ -124,7 +124,7 @@ PLANS = {
         "chat_model": "gpt-4o",                      # $0.006/call
         "code_model": "claude-3-5-sonnet-20241022",  # $0.036/call
         "image_provider": "dalle3",                  # $0.040/image
-        "credits_per_day": 4000,                  # Reduced from 6000
+        "credits_per_day": 4000,
         "features": ["basic_chat", "basic_notes", "grammar", "translate",
                      "advanced_chat", "code_assist", "dalle_images",
                      "quiz", "flashcards", "summarize", "explain",
@@ -140,7 +140,7 @@ PLANS = {
         "image_model": "gemini-2.0-flash-preview-image-generation", # $0.040/image
         "video_model": "gemini-2.5-flash",                          # $0.100/clip
         "image_provider": "gemini",
-        "credits_per_day": 15000,                 # Reduced from 25000
+        "credits_per_day": 15000,
         "features": ["*"],
         "badge": "Elite",
         "color": "#f59e0b",
@@ -411,7 +411,7 @@ def ai_generate_image(prompt, plan):
             return None, "Gemini returned no image data."
         except Exception as e:
             print(f"[FALLBACK] Gemini Image failed: {e}")
-            # Fallback to Pollinations for FREE users only (Basic/Elite should just error to retry)
+            #  Fallback to Pollinations for FREE users only (Basic/Elite should just error to retry)
             if plan == "free":
                 clean = re.sub(r"[^\w\s-]", "", prompt)[:200].replace(" ", "%20")
                 return f"https://image.pollinations.ai/prompt/{clean}?width=1024&height=768&nologo=true", None

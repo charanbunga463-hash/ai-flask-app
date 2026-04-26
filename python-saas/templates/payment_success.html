@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Payment Successful</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--void:#020408;--surface:#0c1018;--raised:#111620;--border:rgba(255,255,255,0.06);--text:#ddeeff;--soft:#5a7a9a;--gold:#f59e0b;--gglow:rgba(245,158,11,0.25);--green:#34d399;}
+html,body{min-height:100vh;background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;display:grid;place-items:center;padding:20px;}
+.bg{position:fixed;inset:0;background:radial-gradient(ellipse 600px 500px at 50% 40%,rgba(52,211,153,0.07),transparent),radial-gradient(ellipse 400px 300px at 30% 70%,rgba(245,158,11,0.06),transparent);}
+.card{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:48px 40px;text-align:center;max-width:460px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,0.5);}
+.success-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));border:2px solid rgba(52,211,153,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:36px;box-shadow:0 0 40px rgba(52,211,153,0.2);}
+h1{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;margin-bottom:10px;letter-spacing:-0.03em;}
+h1 span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+p{font-size:0.86rem;color:var(--soft);line-height:1.7;margin-bottom:6px;}
+.plan-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--gold);font-size:0.78rem;font-weight:700;margin:16px 0 24px;}
+.features{text-align:left;background:var(--raised);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;}
+.feat-item{display:flex;align-items:center;gap:9px;font-size:0.82rem;padding:5px 0;color:var(--soft);}
+.feat-item::before{content:'✓';color:var(--green);font-weight:700;font-size:14px;width:16px;flex-shrink:0;}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#0a0500;border-radius:12px;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.95rem;text-decoration:none;transition:opacity 0.2s;box-shadow:0 4px 24px var(--gglow);}
+.cta:hover{opacity:0.88;}
+.confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<canvas class="confetti" id="confetti"></canvas>
+<div class="card">
+  <div class="success-ring">🎉</div>
+  <h1>Welcome to <span>NexusAI</span></h1>
+  <p>Payment confirmed! Your plan has been upgraded successfully.</p>
+  <p style="margin-bottom:0;">Hello, <strong>{{ username }}</strong> — you now have full access.</p>
+  <div class="plan-chip">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    Premium Plan Active
+  </div>
+  <div class="features">
+    <div class="feat-item">Access to GPT-4o, Claude Opus & Gemini</div>
+    <div class="feat-item">Unlimited notes sessions</div>
+    <div class="feat-item">Advanced code with Claude Opus</div>
+    <div class="feat-item">DALL·E 3 / Gemini image generation</div>
+    <div class="feat-item">Video analysis with Gemini 2.5</div>
+    <div class="feat-item">Priority support</div>
+  </div>
+  <a href="/" class="cta">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    Go to Dashboard →
+  </a>
+</div>
+<script>
+// Confetti animation
+const canvas=document.getElementById('confetti');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+const colors=['#f59e0b','#fbbf24','#34d399','#8b5cf6','#06b6d4'];
+const particles=Array.from({length:120},()=>({
+  x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,
+  r:Math.random()*6+2,d:Math.random()*80+40,c:colors[Math.floor(Math.random()*colors.length)],
+  vx:(Math.random()-0.5)*2,vy:Math.random()*3+1,angle:Math.random()*360,va:(Math.random()-0.5)*4
+}));
+let frame=0;
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p=>{
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle*Math.PI/180);
+    ctx.fillStyle=p.c;ctx.globalAlpha=0.8;ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*2);
+    ctx.restore();
+    p.y+=p.vy;p.x+=p.vx;p.angle+=p.va;
+    if(p.y>canvas.height){p.y=-10;p.x=Math.random()*canvas.width;}
+  });
+  frame++;
+  if(frame<300)requestAnimationFrame(draw);
+}
+draw();
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+</script>
+</body>
+</html>

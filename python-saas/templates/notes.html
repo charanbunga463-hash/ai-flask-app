@@ -3,163 +3,199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AuraAI — My Notes</title>
+<title>NexusAI — My Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#0b0e18;--void:#06080e;--surface:#111626;--raised:#181e2f;
-  --border:rgba(255,255,255,0.06);--text:#d8e2f2;--muted:#3e4e62;--soft:#7a90a8;
-  --teal:#00d4aa;--tealglow:rgba(0,212,170,0.22);
-  --violet:#7c5cfc;--red:#ff4757;
+  --void:#020408;--bg:#06090f;--surface:#0c1018;--raised:#111620;--lift:#16202e;
+  --border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.1);
+  --text:#ddeeff;--muted:#1e2d42;--soft:#5a7a9a;--dim:#3a5a7a;
+  --gold:#f59e0b;--gold2:#fbbf24;--gglow:rgba(245,158,11,0.2);
+  --violet:#8b5cf6;--vglow:rgba(139,92,246,0.18);
+  --green:#34d399;--red:#f87171;--orange:#fb923c;
 }
-html,body{min-height:100vh;background:var(--bg);color:var(--text);
-  font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
-::-webkit-scrollbar{width:3px;height:3px;}
-::-webkit-scrollbar-thumb{background:var(--raised);border-radius:9px;}
+*{scrollbar-width:thin;scrollbar-color:var(--raised) transparent;}
+html,body{background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+.bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 700px 500px at 70% 20%,rgba(139,92,246,0.06),transparent),
+              radial-gradient(ellipse 500px 400px at 20% 80%,rgba(245,158,11,0.05),transparent);}
+.grid{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(139,92,246,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(139,92,246,0.02) 1px,transparent 1px);background-size:60px 60px;}
+.page{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:32px 20px 60px;}
 
-header{
-  background:var(--void);border-bottom:1px solid var(--border);
-  padding:14px 24px;display:flex;align-items:center;gap:14px;
-}
-.hlogo{
-  width:32px;height:32px;background:var(--teal);border-radius:9px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--void);
-  box-shadow:0 0 12px var(--tealglow);text-decoration:none;flex-shrink:0;
-}
-.hbrand{font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;
-  color:var(--text);text-decoration:none;}
-.hbrand span{color:var(--teal);}
-.hback{margin-left:auto;display:flex;align-items:center;gap:6px;
-  padding:7px 14px;background:var(--surface);border:1px solid var(--border);
-  border-radius:8px;color:var(--soft);font-size:0.79rem;font-weight:600;
-  text-decoration:none;transition:all 0.18s;}
-.hback:hover{background:var(--raised);border-color:rgba(255,255,255,0.12);color:var(--text);}
+/* Topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:36px;flex-wrap:wrap;}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--soft);text-decoration:none;
+  font-size:0.82rem;font-weight:600;padding:7px 13px;background:var(--raised);
+  border:1px solid var(--border);border-radius:9px;transition:all 0.2s;}
+.back:hover{color:var(--gold);border-color:rgba(245,158,11,0.3);}
+.page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;letter-spacing:-0.03em;flex:1;}
+.page-title span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-.page{max-width:900px;margin:0 auto;padding:32px 24px;}
+/* New notes btn */
+.new-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;
+  background:linear-gradient(135deg,var(--violet),#6d28d9);color:#fff;
+  border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:700;
+  font-size:0.85rem;cursor:pointer;text-decoration:none;transition:all 0.2s;
+  box-shadow:0 4px 18px var(--vglow);}
+.new-btn:hover{opacity:0.88;transform:translateY(-1px);}
 
-.page-title{
-  font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;
-  letter-spacing:-0.04em;margin-bottom:6px;
-}
-.page-title span{color:var(--violet);}
-.page-sub{font-size:0.86rem;color:var(--soft);margin-bottom:28px;}
+/* Stats bar */
+.stats{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 20px;display:flex;align-items:center;gap:12px;flex:1;min-width:140px;}
+.stat-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.stat-icon.v{background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.2);}
+.stat-icon.g{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2);}
+.stat-icon.c{background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.2);}
+.stat-val{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;line-height:1;}
+.stat-lbl{font-size:0.72rem;color:var(--soft);margin-top:2px;}
 
-.empty{
-  background:var(--surface);border:2px dashed var(--border);
-  border-radius:14px;padding:48px 24px;text-align:center;
-}
-.empty-icon{font-size:36px;margin-bottom:12px;}
-.empty h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:6px;}
-.empty p{font-size:0.84rem;color:var(--soft);margin-bottom:18px;}
-.btn-back{
-  display:inline-flex;align-items:center;gap:7px;
-  padding:10px 22px;
-  background:linear-gradient(135deg,var(--violet),#5e3ed8);
-  border:none;border-radius:10px;color:#fff;
-  font-family:'Syne',sans-serif;font-weight:800;font-size:0.87rem;
-  text-decoration:none;cursor:pointer;
-  transition:opacity 0.18s;
-}
-.btn-back:hover{opacity:0.85;}
+/* Filter bar */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.79rem;
+  padding:9px 12px 9px 34px;outline:none;transition:border-color 0.2s;}
+.search-wrap input:focus{border-color:rgba(245,158,11,0.4);}
+.search-wrap input::placeholder{color:var(--dim);}
+.search-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--dim);}
+.sort-sel{background:var(--surface);border:1px solid var(--border);color:var(--text);
+  border-radius:9px;padding:9px 12px;font-size:0.8rem;outline:none;font-family:'Outfit',sans-serif;}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-.note-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:12px;overflow:hidden;
-  transition:border-color 0.18s,transform 0.18s;
-}
-.note-card:hover{border-color:rgba(124,92,252,0.35);transform:translateY(-2px);}
-.note-card-top{
-  background:linear-gradient(135deg,rgba(124,92,252,0.12),rgba(0,212,170,0.06));
-  padding:14px 16px 12px;border-bottom:1px solid var(--border);
-}
-.note-card-top h3{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:800;
-  margin-bottom:3px;line-height:1.3;}
-.note-card-top time{font-size:0.69rem;color:var(--muted);font-family:'Space Mono',monospace;}
-.note-card-actions{padding:10px 14px;display:flex;gap:7px;}
-.nc-btn{
-  flex:1;padding:7px 6px;border-radius:7px;font-size:0.76rem;font-weight:700;
-  font-family:'DM Sans',sans-serif;cursor:pointer;border:none;
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  transition:opacity 0.15s;
-}
-.nc-view{background:rgba(124,92,252,0.12);color:var(--violet);
-  border:1px solid rgba(124,92,252,0.25);}
-.nc-view:hover{background:rgba(124,92,252,0.2);}
-.nc-dl{background:var(--teal);color:var(--void);}
-.nc-dl:hover{opacity:0.85;}
-.nc-del{background:rgba(255,71,87,0.09);color:var(--red);
-  border:1px solid rgba(255,71,87,0.2);flex:0;padding:7px 9px;}
-.nc-del:hover{background:rgba(255,71,87,0.17);}
+/* Notes grid */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;transition:all 0.2s;display:flex;flex-direction:column;}
+.note-card:hover{border-color:rgba(139,92,246,0.3);transform:translateY(-3px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(139,92,246,0.1);}
+.nc-top{padding:18px 18px 14px;flex:1;}
+.nc-plan{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+  border-radius:20px;font-size:0.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.08em;margin-bottom:10px;}
+.nc-plan.free{background:rgba(90,122,154,0.1);border:1px solid rgba(90,122,154,0.2);color:var(--soft);}
+.nc-plan.basic{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:var(--blue);}
+.nc-plan.medium{background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--violet);}
+.nc-plan.elite{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:var(--gold);}
+.nc-title{font-family:'Playfair Display',serif;font-size:0.98rem;font-weight:800;
+  margin-bottom:8px;line-height:1.3;color:var(--text);}
+.nc-date{font-family:'JetBrains Mono',monospace;font-size:0.63rem;color:var(--dim);}
+.nc-acts{display:flex;align-items:center;gap:6px;padding:12px 18px;
+  border-top:1px solid var(--border);background:rgba(255,255,255,0.01);}
+.nc-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;
+  font-size:0.72rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s;
+  font-family:'Outfit',sans-serif;border:1px solid var(--border);}
+.nc-btn.view{background:var(--raised);color:var(--text);}
+.nc-btn.view:hover{border-color:var(--violet);color:var(--violet);}
+.nc-btn.pdf{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.25);color:var(--gold);}
+.nc-btn.pdf:hover{background:rgba(245,158,11,0.15);}
+.nc-btn.del{background:none;border-color:transparent;color:var(--dim);margin-left:auto;}
+.nc-btn.del:hover{color:var(--red);border-color:rgba(248,113,113,0.3);}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 20px;background:var(--surface);
+  border:1px solid var(--border);border-radius:18px;}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+.empty h3{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:800;margin-bottom:8px;}
+.empty p{font-size:0.84rem;color:var(--soft);margin-bottom:20px;line-height:1.65;}
+
+/* Toast */
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;background:var(--raised);
+  border:1px solid rgba(245,158,11,0.4);border-radius:11px;padding:11px 17px;
+  font-size:0.79rem;font-weight:600;color:var(--gold);transform:translateY(20px);
+  opacity:0;transition:all 0.22s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
 </style>
 </head>
 <body>
-<header>
-  <a href="/" class="hlogo">A</a>
-  <a href="/" class="hbrand">Aura<span>AI</span></a>
-  <a href="/" class="hback">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-    Back to Chat
-  </a>
-</header>
-
+<div class="bg"></div><div class="grid"></div>
 <div class="page">
-  <div class="page-title">My <span>Notes</span></div>
-  <div class="page-sub">All your AI-generated study notes and Q&amp;A documents</div>
-
-  {% if not notes_list %}
-  <div class="empty">
-    <div class="empty-icon">📄</div>
-    <h3>No notes yet</h3>
-    <p>Go to the dashboard, click <strong>Notes & Q&A Generator</strong>, and upload a PDF or image to create your first notes set.</p>
-    <a href="/" class="btn-back">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-      </svg>
-      Generate Notes
+  <div class="topbar">
+    <a href="/" class="back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Dashboard
+    </a>
+    <div class="page-title">My <span>Notes</span></div>
+    <a href="/?view=notes" class="new-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      New Notes Session
     </a>
   </div>
-  {% else %}
-  <div class="grid">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-icon v">📄</div>
+      <div><div class="stat-val">{{ notes_list|length }}</div><div class="stat-lbl">Total Notes</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon g">⚡</div>
+      <div><div class="stat-val">{{ plans[plan].name }}</div><div class="stat-lbl">Current Plan</div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon c">🔑</div>
+      <div><div class="stat-val">{{ plans[plan].credits_per_day }}</div><div class="stat-lbl">Daily Credits</div></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <svg class="search-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="noteSearch" placeholder="Search notes…" oninput="filterNotes(this.value)">
+    </div>
+    <select class="sort-sel" onchange="sortNotes(this.value)">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="alpha">A–Z</option>
+    </select>
+  </div>
+
+  {% if notes_list %}
+  <div class="notes-grid" id="notesGrid">
     {% for note in notes_list %}
-    <div class="note-card">
-      <div class="note-card-top">
-        <h3>{{ note[1] }}</h3>
-        <time>{{ note[2].strftime('%d %b %Y, %H:%M') if note[2] else '' }}</time>
+    <div class="note-card" data-title="{{ note[1]|lower }}">
+      <div class="nc-top">
+        <div class="nc-plan {{ plan }}">{{ plans[plan].name }}</div>
+        <div class="nc-title">{{ note[1] }}</div>
+        <div class="nc-date">{{ note[2].strftime('%d %b %Y · %H:%M') if note[2] else '—' }}</div>
       </div>
-      <div class="note-card-actions">
-        <a href="/notes/{{ note[0] }}" class="nc-btn nc-view">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-          View
-        </a>
-        <a href="/notes/{{ note[0] }}/pdf" class="nc-btn nc-dl">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          PDF
-        </a>
-        <form method="POST" action="/notes/{{ note[0] }}/delete"
-              onsubmit="return confirm('Delete this note?')">
-          <button type="submit" class="nc-btn nc-del" title="Delete">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-          </button>
+      <div class="nc-acts">
+        <a href="/notes/{{ note[0] }}" class="nc-btn view">👁 View</a>
+        <a href="/notes/{{ note[0] }}/pdf" class="nc-btn pdf">📄 PDF</a>
+        <form method="POST" action="/notes/{{ note[0] }}/delete" style="display:inline;margin-left:auto;" onsubmit="return confirm('Delete this note?')">
+          <button type="submit" class="nc-btn del">🗑</button>
         </form>
       </div>
     </div>
     {% endfor %}
   </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">📄</div>
+    <h3>No notes yet</h3>
+    <p>Upload a PDF, image, or paste text to generate your first AI-powered study notes with Q&A, quiz, and flashcards.</p>
+    <a href="/" class="new-btn" style="display:inline-flex;">Create First Notes →</a>
+  </div>
   {% endif %}
 </div>
+<div id="toast"></div>
+<script>
+function filterNotes(q){
+  document.querySelectorAll('.note-card').forEach(c=>{
+    c.style.display=c.dataset.title.includes(q.toLowerCase())?'':'none';
+  });
+}
+function sortNotes(v){
+  const grid=document.getElementById('notesGrid');
+  const cards=[...grid.querySelectorAll('.note-card')];
+  cards.sort((a,b)=>{
+    if(v==='alpha')return a.dataset.title.localeCompare(b.dataset.title);
+    if(v==='oldest')return 1;
+    return -1;
+  });
+  cards.forEach(c=>grid.appendChild(c));
+}
+</script>
 </body>
 </html>

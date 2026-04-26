@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#020408;--surface:#0c1018;--raised:#111620;--lift:#16202e;
+  --border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.1);
+  --text:#ddeeff;--muted:#1e2d42;--soft:#5a7a9a;--dim:#3a5a7a;
+  --gold:#f59e0b;--gglow:rgba(245,158,11,0.2);
+  --violet:#8b5cf6;--vglow:rgba(139,92,246,0.18);
+  --green:#34d399;--red:#f87171;--orange:#fb923c;
+}
+*{scrollbar-width:thin;scrollbar-color:var(--raised) transparent;}
+html,body{background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+.bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 700px 500px at 80% 20%,rgba(245,158,11,0.06),transparent),
+              radial-gradient(ellipse 500px 400px at 15% 85%,rgba(139,92,246,0.05),transparent);}
+.page{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:28px 20px 60px;}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--soft);text-decoration:none;
+  font-size:0.81rem;font-weight:600;padding:7px 13px;background:var(--raised);
+  border:1px solid var(--border);border-radius:9px;transition:all 0.2s;}
+.back:hover{color:var(--gold);border-color:rgba(245,158,11,0.3);}
+.page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;}
+
+.grid{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+
+/* Profile card */
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;}
+.profile-hero{background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(139,92,246,0.1));
+  padding:28px 20px;text-align:center;border-bottom:1px solid var(--border);}
+.avatar-wrap{position:relative;display:inline-block;margin-bottom:14px;}
+.avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;
+  border:3px solid rgba(245,158,11,0.4);box-shadow:0 0 24px var(--gglow);}
+.avatar-fallback{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);
+  display:flex;align-items:center;justify-content:center;border:3px solid rgba(245,158,11,0.4);
+  font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;color:#fff;margin:0 auto;}
+.username{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:800;margin-bottom:4px;}
+.user-email{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--soft);margin-bottom:12px;}
+.plan-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
+  border-radius:20px;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;}
+.plan-badge.free{background:rgba(90,122,154,0.1);border:1px solid rgba(90,122,154,0.25);color:var(--soft);}
+.plan-badge.basic{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#3b82f6;}
+.plan-badge.medium{background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.3);color:var(--violet);}
+.plan-badge.elite{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--gold);}
+.plan-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.verify-row{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+.verify-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:20px;font-size:0.64rem;font-weight:600;}
+.verify-chip.ok{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25);color:var(--green);}
+.verify-chip.no{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:var(--red);}
+
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);}
+.pstat{background:var(--surface);padding:14px;text-align:center;}
+.pstat-val{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--gold);}
+.pstat-lbl{font-size:0.67rem;color:var(--soft);margin-top:2px;}
+.profile-foot{padding:14px 18px;border-top:1px solid var(--border);}
+.upgrade-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0500;
+  border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-weight:800;
+  font-size:0.83rem;text-decoration:none;transition:opacity 0.2s;}
+.upgrade-btn:hover{opacity:0.88;}
+
+/* Right panels */
+.right-col{display:flex;flex-direction:column;gap:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.card-head{padding:14px 20px;border-bottom:1px solid var(--border);
+  font-family:'Playfair Display',serif;font-size:0.9rem;font-weight:800;
+  display:flex;align-items:center;gap:8px;}
+.card-head .badge{font-size:0.61rem;font-family:'JetBrains Mono',monospace;color:var(--dim);
+  background:var(--raised);border:1px solid var(--border);padding:2px 7px;border-radius:20px;margin-left:auto;}
+.card-body{padding:18px 20px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.12em;color:var(--soft);margin-bottom:5px;}
+.field input,.field textarea,.field select{width:100%;background:var(--raised);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.83rem;
+  padding:10px 12px;outline:none;transition:border-color 0.2s;display:block;}
+.field input:focus,.field textarea:focus{border-color:rgba(245,158,11,0.4);}
+.field textarea{resize:vertical;min-height:75px;}
+.field input[type="password"]{font-family:'JetBrains Mono',monospace;}
+
+.save-btn{display:flex;align-items:center;gap:6px;padding:10px 22px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#0a0500;
+  border-radius:9px;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.85rem;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 3px 12px var(--gglow);}
+.save-btn:hover{opacity:0.88;transform:translateY(-1px);}
+.danger-btn{display:flex;align-items:center;gap:6px;padding:10px 22px;
+  background:transparent;border:1px solid rgba(248,113,113,0.3);color:var(--red);
+  border-radius:9px;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.84rem;cursor:pointer;transition:all 0.2s;}
+.danger-btn:hover{background:rgba(248,113,113,0.07);}
+
+.success-msg{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);
+  border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.error-msg{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);
+  border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--red);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+
+/* Model info grid */
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.model-item{background:var(--raised);border:1px solid var(--border);border-radius:9px;padding:11px 13px;}
+.model-item-type{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin-bottom:4px;}
+.model-item-name{font-family:'JetBrains Mono',monospace;font-size:0.76rem;font-weight:600;color:var(--text);}
+.model-item-provider{font-size:0.65rem;color:var(--soft);margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <div class="topbar">
+    <a href="/" class="back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Dashboard
+    </a>
+    <div class="page-title" style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;">My Profile</div>
+  </div>
+
+  {% if request.args.get('success') %}
+  <div class="success-msg">✓ {{ request.args.get('success') }}</div>
+  {% endif %}
+  {% if request.args.get('error') %}
+  <div class="error-msg">⚠ {{ request.args.get('error') }}</div>
+  {% endif %}
+
+  <div class="grid">
+    <!-- Left: Profile Card -->
+    <div class="profile-card">
+      <div class="profile-hero">
+        {% if user[4] %}
+        <div class="avatar-wrap"><img class="avatar" src="{{ user[4] }}" alt="{{ user[0] }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="avatar-fallback" style="display:none;">{{ user[0][0]|upper }}</div></div>
+        {% else %}
+        <div class="avatar-fallback">{{ user[0][0]|upper }}</div>
+        {% endif %}
+        <div class="username">{{ user[0] }}</div>
+        <div class="user-email">{{ user[1] }}</div>
+        <div class="plan-badge {{ plan }}">
+          <span class="plan-dot"></span>
+          {{ plans[plan].name }} Plan
+        </div>
+        <div class="verify-row">
+          <span class="verify-chip {% if user[6] %}ok{% else %}no{% endif %}">
+            {% if user[6] %}✓{% else %}✗{% endif %} Email
+          </span>
+          <span class="verify-chip {% if user[7] %}ok{% else %}no{% endif %}">
+            {% if user[7] %}✓{% else %}✗{% endif %} Phone
+          </span>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div class="pstat"><div class="pstat-val">{{ chat_count }}</div><div class="pstat-lbl">Chats</div></div>
+        <div class="pstat"><div class="pstat-val">{{ note_count }}</div><div class="pstat-lbl">Notes</div></div>
+        <div class="pstat"><div class="pstat-val">{{ msg_count }}</div><div class="pstat-lbl">Messages</div></div>
+      </div>
+      {% if plan != 'elite' %}
+      <div class="profile-foot">
+        <a href="/pricing" class="upgrade-btn">⚡ Upgrade Plan</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: Settings -->
+    <div class="right-col">
+
+      <!-- AI Models card -->
+      <div class="card">
+        <div class="card-head">⚡ Your AI Models <span class="badge">{{ plans[plan].name }} Plan</span></div>
+        <div class="card-body">
+          <div class="model-grid">
+            <div class="model-item">
+              <div class="model-item-type">💬 Chat</div>
+              <div class="model-item-name">{{ plans[plan].chat_model }}</div>
+              <div class="model-item-provider">{% if plan=='free' %}Groq{% else %}OpenAI{% endif %}</div>
+            </div>
+            <div class="model-item">
+              <div class="model-item-type">💻 Code</div>
+              <div class="model-item-name">{{ plans[plan].code_model }}</div>
+              <div class="model-item-provider">{% if plan=='free' %}Groq{% else %}Anthropic{% endif %}</div>
+            </div>
+            <div class="model-item">
+              <div class="model-item-type">🎨 Images</div>
+              <div class="model-item-name">{{ plans[plan].image_provider }}</div>
+              <div class="model-item-provider">{% if plan=='free' %}Pollinations{% elif plan in ['basic','medium'] %}OpenAI DALL·E 3{% else %}Google Gemini{% endif %}</div>
+            </div>
+            <div class="model-item">
+              <div class="model-item-type">📊 Daily Limit</div>
+              <div class="model-item-name">{{ plans[plan].credits_per_day }} credits</div>
+              <div class="model-item-provider">used across all tools</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Profile -->
+      <div class="card">
+        <div class="card-head">👤 Edit Profile</div>
+        <div class="card-body">
+          <form method="POST" action="/profile/update">
+            <div class="field">
+              <label>Display Name / Bio</label>
+              <textarea name="bio" placeholder="Tell others about yourself…">{{ user[3] or '' }}</textarea>
+            </div>
+            <div class="field">
+              <label>Avatar URL</label>
+              <input type="url" name="avatar_url" placeholder="https://example.com/avatar.jpg" value="{{ user[4] or '' }}">
+            </div>
+            <button type="submit" class="save-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Changes
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="card">
+        <div class="card-head">🔒 Change Password</div>
+        <div class="card-body">
+          <form method="POST" action="/profile/change_password">
+            <div class="field">
+              <label>Current Password</label>
+              <input type="password" name="old_password" placeholder="Enter current password" autocomplete="current-password">
+            </div>
+            <div class="field">
+              <label>New Password</label>
+              <input type="password" name="new_password" placeholder="Min 6 characters" autocomplete="new-password">
+            </div>
+            <button type="submit" class="save-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Update Password
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Account Info -->
+      <div class="card">
+        <div class="card-head">📋 Account Info</div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--soft);">Username</span>
+              <span style="font-family:'JetBrains Mono',monospace;">{{ user[0] }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--soft);">Email</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">{{ user[1] }}</span>
+            </div>
+            {% if user[2] %}
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--soft);">Phone</span>
+              <span style="font-family:'JetBrains Mono',monospace;">{{ user[2] }}</span>
+            </div>
+            {% endif %}
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--soft);">Plan</span>
+              <span style="font-weight:700;color:{% if plan=='elite' %}var(--gold){% elif plan in ['basic','medium'] %}var(--violet){% else %}var(--soft){% endif %};">{{ plans[plan].name }}</span>
+            </div>
+            {% if user[9] %}
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--soft);">Plan Expires</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;">{{ user[9].strftime('%d %b %Y') }}</span>
+            </div>
+            {% endif %}
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:9px 0;">
+              <span style="color:var(--soft);">Member Since</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;">{{ user[5].strftime('%d %b %Y') if user[5] else '—' }}</span>
+            </div>
+          </div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/pricing" class="save-btn" style="text-decoration:none;">⚡ Manage Plan</a>
+            <a href="/logout" class="danger-btn" style="text-decoration:none;">Sign Out</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+  </div><!-- /grid -->
+</div>
+</body>
+</html>

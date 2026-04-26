@@ -3,103 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AuraAI — Register</title>
+<title>NexusAI — Create Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#04060d;--surface:#0a0d18;--raised:#111827;--border:rgba(255,255,255,0.07);
-  --text:#e2eaf8;--muted:#2e3d52;--soft:#6d839e;
-  --teal:#00e5b5;--tglow:rgba(0,229,181,0.2);
-  --violet:#8b5cf6;--vglow:rgba(139,92,246,0.2);--red:#f87171;
+  --void:#020408;--bg:#06090f;--surface:#0c1018;--raised:#111620;
+  --border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.12);
+  --text:#e8f0fc;--muted:#1e2d40;--soft:#5a7a9a;
+  --gold:#f59e0b;--gold2:#fbbf24;--gglow:rgba(245,158,11,0.25);
+  --violet:#8b5cf6;--vglow:rgba(139,92,246,0.2);
+  --cyan:#06b6d4;--red:#f87171;--green:#34d399;
 }
-html,body{min-height:100vh;background:var(--bg);color:var(--text);
-  font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}
-body::before{content:'';position:fixed;inset:0;z-index:0;
-  background:radial-gradient(ellipse 700px 500px at 85% 85%,rgba(139,92,246,0.05),transparent),
-    radial-gradient(ellipse 600px 400px at 15% 15%,rgba(0,229,181,0.04),transparent);}
-body::after{content:'';position:fixed;inset:0;z-index:0;
-  background-image:linear-gradient(rgba(139,92,246,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(139,92,246,0.03) 1px,transparent 1px);
-  background-size:48px 48px;
-  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);}
-.wrap{position:relative;z-index:1;width:100%;max-width:420px;}
-.logo-banner{text-align:center;margin-bottom:24px;}
-.logo-glyph{display:inline-flex;align-items:center;justify-content:center;
-  width:52px;height:52px;background:linear-gradient(135deg,var(--violet),#6d28d9);
-  border-radius:14px;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;
-  color:#fff;box-shadow:0 0 28px var(--vglow);margin-bottom:12px;}
-.logo-name{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;
-  letter-spacing:-0.05em;}.logo-name span{color:var(--violet);}
-.logo-tag{font-size:0.81rem;color:var(--soft);margin-top:2px;}
-.pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0;}
-.pill{padding:4px 11px;background:var(--raised);border:1px solid var(--border);
-  border-radius:20px;font-size:0.67rem;font-weight:600;color:var(--soft);}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
-  padding:32px;box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(139,92,246,0.05);}
-.card-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;
-  margin-bottom:20px;letter-spacing:-0.03em;}
-.card-title span{color:var(--violet);}
-.field{margin-bottom:15px;}
-.field label{display:block;font-size:0.64rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:0.12em;color:var(--muted);margin-bottom:5px;}
-.field input{width:100%;background:var(--raised);border:1px solid var(--border);
-  border-radius:10px;color:var(--text);font-family:'JetBrains Mono',monospace;
-  font-size:0.84rem;padding:11px 14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-.field input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,0.08);}
+html,body{min-height:100vh;background:var(--void);color:var(--text);
+  font-family:'Outfit',sans-serif;display:grid;place-items:center;padding:20px;}
+.bg-canvas{position:fixed;inset:0;z-index:0;}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.1;}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,#8b5cf6,transparent);top:-200px;right:-200px;animation:drift1 14s ease-in-out infinite;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,#f59e0b,transparent);bottom:-200px;left:-100px;animation:drift2 18s ease-in-out infinite;}
+.grid-bg{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(139,92,246,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(139,92,246,0.02) 1px,transparent 1px);background-size:64px 64px;}
+@keyframes drift1{0%,100%{transform:translate(0,0);}50%{transform:translate(-30px,20px);}}
+@keyframes drift2{0%,100%{transform:translate(0,0);}50%{transform:translate(20px,-30px);}}
+.wrap{position:relative;z-index:10;width:100%;max-width:480px;}
+.logo-area{text-align:center;margin-bottom:24px;}
+.logo-icon{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;
+  background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 0 30px var(--vglow);margin-bottom:12px;}
+.logo-icon svg{width:28px;height:28px;color:#fff;}
+.logo-name{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;
+  background:linear-gradient(135deg,#8b5cf6,#a78bfa,#c4b5fd);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;}
+.logo-sub{font-size:0.78rem;color:var(--soft);margin-top:3px;letter-spacing:0.05em;text-transform:uppercase;}
+
+.card{background:rgba(12,16,24,0.85);backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:24px;padding:36px 32px;
+  box-shadow:0 40px 100px rgba(0,0,0,0.6),0 0 0 1px rgba(139,92,246,0.06);}
+.card-title{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;margin-bottom:4px;}
+.card-sub{font-size:0.81rem;color:var(--soft);margin-bottom:24px;}
+.card-sub span{color:var(--violet);}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.61rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.14em;color:var(--soft);margin-bottom:5px;}
+.field-wrap{position:relative;}
+.field-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.field input{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.83rem;
+  padding:11px 14px 11px 37px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.field input:focus{border-color:rgba(139,92,246,0.5);box-shadow:0 0 0 3px rgba(139,92,246,0.08);}
 .field input::placeholder{color:var(--muted);}
-.hint{font-size:0.73rem;color:var(--soft);margin-bottom:18px;}
+
+/* Strength meter */
+.strength{margin-top:5px;height:3px;background:var(--raised);border-radius:2px;overflow:hidden;}
+.strength-bar{height:100%;border-radius:2px;transition:width 0.3s,background 0.3s;width:0%;}
+
+/* Phone format hint */
+.field-hint{font-size:0.67rem;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+
 .err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);
-  border-radius:9px;padding:10px 14px;font-size:0.8rem;color:var(--red);
-  margin-bottom:15px;text-align:center;}
-.btn{width:100%;background:linear-gradient(135deg,var(--violet),#6d28d9);
-  border:none;color:#fff;font-family:'Syne',sans-serif;font-weight:800;
-  font-size:0.92rem;padding:13px;border-radius:11px;cursor:pointer;
-  transition:opacity 0.2s,transform 0.2s;box-shadow:0 4px 20px var(--vglow);}
+  border-radius:9px;padding:10px 13px;font-size:0.79rem;color:var(--red);
+  margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.btn{width:100%;background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+  border:none;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.93rem;
+  padding:13px;border-radius:11px;cursor:pointer;transition:all 0.2s;
+  box-shadow:0 4px 24px var(--vglow);}
 .btn:hover{opacity:0.88;transform:translateY(-1px);}
-.divider{display:flex;align-items:center;gap:10px;margin:18px 0 0;
-  color:var(--muted);font-size:0.74rem;}
+.divider{display:flex;align-items:center;gap:10px;margin:18px 0 0;color:var(--muted);font-size:0.72rem;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.foot{text-align:center;margin-top:12px;font-size:0.8rem;color:var(--soft);}
+.foot{text-align:center;margin-top:12px;font-size:0.79rem;color:var(--soft);}
 .foot a{color:var(--violet);text-decoration:none;font-weight:600;}
-.foot a:hover{text-decoration:underline;}
+.foot a:hover{color:#a78bfa;}
+
+.perks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:22px;}
+.perk{display:flex;align-items:center;gap:7px;padding:8px 11px;
+  background:var(--raised);border:1px solid var(--border);border-radius:9px;font-size:0.73rem;color:var(--soft);}
+.perk svg{flex-shrink:0;color:var(--green);}
+
+.terms{font-size:0.71rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.5;}
+.terms a{color:var(--soft);}
 </style>
 </head>
 <body>
+<div class="bg-canvas"><div class="orb orb1"></div><div class="orb orb2"></div></div>
+<div class="grid-bg"></div>
 <div class="wrap">
-  <div class="logo-banner">
-    <div class="logo-glyph">A</div>
-    <div class="logo-name">Join <span>AuraAI</span></div>
-    <div class="logo-tag">Free AI workspace — notes, chat, tools &amp; more</div>
+  <div class="logo-area">
+    <div class="logo-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 3L28 9V23L16 29L4 23V9L16 3Z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.1)"/>
+        <path d="M16 8L23 12V20L16 24L9 20V12L16 8Z" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3" fill="white"/>
+      </svg>
+    </div>
+    <div class="logo-name">NexusAI</div>
+    <div class="logo-sub">Join millions using premium AI</div>
   </div>
-  <div class="pills">
-    <span class="pill">📄 PDF Notes</span>
-    <span class="pill">💬 AI Chat</span>
-    <span class="pill">🎨 Images</span>
-    <span class="pill">🃏 Flashcards</span>
-    <span class="pill">📝 Grammar Check</span>
-    <span class="pill">🌍 Translate</span>
-    <span class="pill">🧠 Quiz</span>
-    <span class="pill">💡 Explain</span>
+
+  <div class="perks">
+    <div class="perk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Free tier always available</div>
+    <div class="perk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>GPT-4o on Elite plan</div>
+    <div class="perk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Claude Opus for code</div>
+    <div class="perk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Gemini image & video</div>
   </div>
+
+  <div class="plan-row" style="display:flex;gap:8px;margin-bottom:22px;">
+    <div class="plan-badge plan-free" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);text-align:center;font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;border-color:rgba(107,114,128,0.3);">Free<span>50 cred/day</span></div>
+    <div class="plan-badge plan-basic" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);text-align:center;font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#3b82f6;border-color:rgba(59,130,246,0.3);background:rgba(59,130,246,0.05);">Basic<span>1K cred/day</span></div>
+    <div class="plan-badge plan-medium" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);text-align:center;font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#8b5cf6;border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.05);">Medium<span>4K cred/day</span></div>
+    <div class="plan-badge plan-elite" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);text-align:center;font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#f59e0b;border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);">Elite<span>15K cred/day</span></div>
+  </div>
+
+  <style>
+    .plan-badge span{display:block;font-size:0.6rem;font-weight:400;color:var(--soft);margin-top:1px;text-transform:none;}
+  </style>
+
   <div class="card">
-    <div class="card-title">Create your <span>account</span></div>
+    <div class="card-title">Create your account</div>
+    <div class="card-sub">Start free — upgrade to <span>Basic</span>, <span>Medium</span> or <span>Elite</span> anytime</div>
     <form method="POST">
+      <div class="row">
+        <div class="field">
+          <label>Username</label>
+          <div class="field-wrap">
+            <svg class="field-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input name="username" placeholder="username" required minlength="3" autocomplete="username">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <div class="field-wrap">
+            <svg class="field-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" name="email" placeholder="you@email.com" required autocomplete="email">
+          </div>
+        </div>
+      </div>
       <div class="field">
-        <label>Username</label>
-        <input name="username" placeholder="Choose a username" required autocomplete="username" minlength="3">
+        <label>Phone (for OTP verification)</label>
+        <div class="field-wrap">
+          <svg class="field-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.57 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16a2 2 0 0 1 .27.92z"/></svg>
+          <input type="tel" name="phone" placeholder="+91 9876543210" autocomplete="tel">
+        </div>
+        <div class="field-hint">Include country code. Used for OTP verification.</div>
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" name="password" placeholder="Create a password" required autocomplete="new-password" minlength="4">
+        <div class="field-wrap">
+          <svg class="field-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input id="pwd" type="password" name="password" placeholder="Min 6 characters" required minlength="6" autocomplete="new-password" oninput="updateStrength(this.value)">
+        </div>
+        <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
       </div>
-      <div class="hint">Minimum 3 chars for username · Minimum 4 chars for password</div>
-      {% if error %}<div class="err">⚠ {{ error }}</div>{% endif %}
-      <button type="submit" class="btn">Create Account →</button>
+      {% if error %}<div class="err"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ error }}</div>{% endif %}
+      <button type="submit" class="btn">Create Account & Verify →</button>
     </form>
-    <div class="divider">already registered?</div>
-    <div class="foot"><a href="/login">Sign in to your account</a></div>
+    <div class="divider">already have an account?</div>
+    <div class="foot"><a href="/login">Sign in</a></div>
+    <div class="terms">By creating an account you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></div>
   </div>
 </div>
+<script>
+function updateStrength(pwd){
+  const bar=document.getElementById('strengthBar');
+  let score=0;
+  if(pwd.length>=6)score++;
+  if(pwd.length>=10)score++;
+  if(/[A-Z]/.test(pwd))score++;
+  if(/[0-9]/.test(pwd))score++;
+  if(/[^A-Za-z0-9]/.test(pwd))score++;
+  const colors=['#f87171','#fb923c','#facc15','#4ade80','#34d399'];
+  const widths=['20%','40%','60%','80%','100%'];
+  bar.style.width=widths[score-1]||'0%';
+  bar.style.background=colors[score-1]||'transparent';
+}
+</script>
 </body>
 </html>

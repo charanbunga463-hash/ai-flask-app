@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Verify Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--void:#020408;--surface:#0c1018;--raised:#111620;--border:rgba(255,255,255,0.06);
+  --text:#e8f0fc;--muted:#1e2d40;--soft:#5a7a9a;--gold:#f59e0b;--gold2:#fbbf24;--red:#f87171;--green:#34d399;}
+html,body{min-height:100vh;background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;display:grid;place-items:center;padding:20px;}
+.bg{position:fixed;inset:0;background:radial-gradient(ellipse 600px 400px at 50% 30%,rgba(245,158,11,0.08),transparent);}
+.wrap{position:relative;z-index:1;width:100%;max-width:400px;}
+.logo-area{text-align:center;margin-bottom:28px;}
+.logo-icon{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 0 30px rgba(245,158,11,0.3);margin-bottom:12px;}
+.logo-icon svg{width:28px;height:28px;color:#fff;}
+.logo-name{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;
+  background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.card{background:rgba(12,16,24,0.9);backdrop-filter:blur(20px);border:1px solid var(--border);
+  border-radius:24px;padding:36px 32px;box-shadow:0 40px 80px rgba(0,0,0,0.5);}
+.icon-wrap{display:flex;align-items:center;justify-content:center;
+  width:64px;height:64px;border-radius:20px;background:rgba(245,158,11,0.1);
+  border:1px solid rgba(245,158,11,0.2);margin:0 auto 18px;font-size:28px;}
+.card-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;text-align:center;margin-bottom:6px;}
+.card-sub{font-size:0.8rem;color:var(--soft);text-align:center;margin-bottom:28px;line-height:1.6;}
+.card-sub strong{color:var(--gold);}
+
+/* OTP input group */
+.otp-group{display:flex;gap:10px;justify-content:center;margin-bottom:22px;}
+.otp-group input{width:48px;height:56px;background:var(--raised);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:1.4rem;
+  font-weight:500;text-align:center;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.otp-group input:focus{border-color:rgba(245,158,11,0.6);box-shadow:0 0 0 3px rgba(245,158,11,0.1);}
+.err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);
+  border-radius:9px;padding:10px 13px;font-size:0.79rem;color:var(--red);margin-bottom:14px;text-align:center;}
+.btn{width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;
+  color:#0a0500;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.92rem;
+  padding:13px;border-radius:11px;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px rgba(245,158,11,0.25);}
+.btn:hover{opacity:0.88;transform:translateY(-1px);}
+.btn-ghost{width:100%;background:transparent;border:1px solid var(--border);color:var(--soft);
+  font-family:'Outfit',sans-serif;font-weight:600;font-size:0.86rem;padding:11px;
+  border-radius:11px;cursor:pointer;transition:all 0.2s;margin-top:10px;}
+.btn-ghost:hover{background:var(--raised);color:var(--text);}
+.timer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.75rem;
+  color:var(--soft);margin-top:12px;}
+.timer span{color:var(--gold);}
+.skip{text-align:center;margin-top:16px;font-size:0.79rem;color:var(--soft);}
+.skip a{color:var(--gold);text-decoration:none;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-icon">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M16 3L28 9V23L16 29L4 23V9L16 3Z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="16" cy="16" r="3" fill="white"/></svg>
+    </div>
+    <div class="logo-name">NexusAI</div>
+  </div>
+  <div class="card">
+    <div class="icon-wrap">📱</div>
+    <div class="card-title">Verify your account</div>
+    <div class="card-sub">
+      We sent a 6-digit OTP to your phone number.<br>
+      Enter it below to verify your account.<br>
+      {% if has_email %}<strong>Also check your email</strong> for a verification link.{% endif %}
+    </div>
+    <form method="POST" id="otpForm">
+      <div class="otp-group">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="0" autofocus>
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="1">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="2">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="3">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="4">
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" data-idx="5">
+      </div>
+      <input type="hidden" name="otp" id="otpHidden">
+      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+      <button type="submit" class="btn">Verify Account →</button>
+    </form>
+    <button class="btn-ghost" onclick="resendOTP()" id="resendBtn">Resend OTP</button>
+    <div class="timer" id="timerEl">Resend available in <span id="countdown">60</span>s</div>
+    <div class="skip"><a href="/login">Skip for now (verify later)</a></div>
+  </div>
+</div>
+<script>
+// OTP input navigation
+const inputs = document.querySelectorAll('.otp-input');
+inputs.forEach((inp, i) => {
+  inp.addEventListener('input', e => {
+    if(e.target.value && i < 5) inputs[i+1].focus();
+    updateHidden();
+  });
+  inp.addEventListener('keydown', e => {
+    if(e.key === 'Backspace' && !e.target.value && i > 0) inputs[i-1].focus();
+  });
+  inp.addEventListener('paste', e => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+    paste.split('').forEach((ch, j) => { if(inputs[j]) inputs[j].value = ch; });
+    updateHidden();
+    if(paste.length === 6) inputs[5].focus();
+  });
+});
+function updateHidden(){
+  document.getElementById('otpHidden').value = Array.from(inputs).map(i=>i.value).join('');
+}
+
+// Timer
+let secs = 60;
+const btn = document.getElementById('resendBtn');
+const timer = document.getElementById('timerEl');
+const countdown = document.getElementById('countdown');
+btn.disabled = true;
+const interval = setInterval(() => {
+  secs--;
+  countdown.textContent = secs;
+  if(secs <= 0){
+    clearInterval(interval);
+    timer.style.display = 'none';
+    btn.disabled = false;
+  }
+}, 1000);
+
+async function resendOTP(){
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try{
+    const res = await fetch('/resend-otp', {method:'POST'});
+    const d = await res.json();
+    if(d.ok){ btn.textContent = '✓ OTP Sent'; setTimeout(()=>{ btn.textContent='Resend OTP'; },3000); }
+    else { btn.textContent = 'Error — try again'; btn.disabled = false; }
+  }catch(e){ btn.textContent = 'Error'; btn.disabled = false; }
+}
+</script>
+</body>
+</html>

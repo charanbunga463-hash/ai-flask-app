@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — My Usage Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#020408;--surface:#0c1018;--raised:#111620;--lift:#16202e;
+  --border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.1);
+  --text:#ddeeff;--soft:#5a7a9a;--dim:#3a5a7a;--muted:#1e2d42;
+  --gold:#f59e0b;--gglow:rgba(245,158,11,0.2);--violet:#8b5cf6;
+  --green:#34d399;--red:#f87171;--orange:#fb923c;--cyan:#06b6d4;
+}
+*{scrollbar-width:thin;scrollbar-color:var(--raised) transparent;}
+html,body{background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+.bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 700px 500px at 80% 10%,rgba(245,158,11,0.05),transparent),
+              radial-gradient(ellipse 500px 400px at 10% 90%,rgba(139,92,246,0.05),transparent);}
+.page{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 60px;}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--soft);text-decoration:none;font-size:0.81rem;font-weight:600;padding:7px 13px;background:var(--raised);border:1px solid var(--border);border-radius:9px;transition:all 0.2s;}
+.back:hover{color:var(--gold);border-color:rgba(245,158,11,0.3);}
+.page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;}
+.page-title span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* Stats overview */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:4px;}
+.stat-card:hover{border-color:rgba(245,158,11,0.2);}
+.stat-icon{font-size:22px;margin-bottom:8px;}
+.stat-val{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;line-height:1;}
+.stat-val.gold{color:var(--gold);}
+.stat-val.violet{color:var(--violet);}
+.stat-val.green{color:var(--green);}
+.stat-val.cyan{color:var(--cyan);}
+.stat-label{font-size:0.75rem;color:var(--soft);}
+
+.section-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;}
+
+/* Chart */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;}
+.chart-wrap{position:relative;height:160px;display:flex;align-items:flex-end;gap:6px;padding-top:20px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bar-fill{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#f59e0b,#d97706);
+  min-height:4px;transition:height 0.4s ease;}
+.bar-label{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--dim);text-align:center;white-space:nowrap;}
+.bar-val{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--gold);font-weight:600;}
+
+/* Model table */
+.model-table-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.mt-head{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);
+  font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);}
+.mt-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:0.82rem;align-items:center;}
+.mt-row:last-child{border-bottom:none;}
+.mt-row:hover{background:rgba(255,255,255,0.01);}
+.model-name{font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--text);}
+.model-count{font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--gold);text-align:right;}
+.model-bar-wrap{width:80px;height:4px;background:var(--raised);border-radius:2px;overflow:hidden;}
+.model-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#f59e0b,#d97706);}
+
+/* Plan upgrade CTA */
+.upgrade-cta{background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(139,92,246,0.07));
+  border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:22px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.upgrade-cta-text h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;margin-bottom:4px;}
+.upgrade-cta-text p{font-size:0.8rem;color:var(--soft);}
+.upgrade-cta-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0500;border-radius:10px;
+  font-weight:800;font-size:0.85rem;text-decoration:none;white-space:nowrap;transition:opacity 0.2s;margin-left:auto;}
+.upgrade-cta-btn:hover{opacity:0.88;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <div class="topbar">
+    <a href="/" class="back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Dashboard
+    </a>
+    <div class="page-title">📊 My <span>Usage Stats</span></div>
+  </div>
+
+  <!-- Overview stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">💬</div>
+      <div class="stat-val gold">{{ daily | sum(attribute=1) }}</div>
+      <div class="stat-label">Messages (7 days)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📄</div>
+      <div class="stat-val violet">{{ total_notes }}</div>
+      <div class="stat-label">Total Notes Created</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔤</div>
+      <div class="stat-val cyan">{{ "{:,}".format(total_tokens) }}</div>
+      <div class="stat-label">Tokens Used</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-val green">{{ plans[plan].name }}</div>
+      <div class="stat-label">Current Plan · {{ plans[plan].credits_per_day }} credits/day</div>
+    </div>
+  </div>
+
+  <!-- 7-day chart -->
+  <div class="chart-card">
+    <div class="section-title">📈 Messages — Last 7 Days</div>
+    {% if daily %}
+    {% set max_cnt = daily | map(attribute=1) | max %}
+    <div class="chart-wrap">
+      {% for row in daily %}
+      <div class="bar-col">
+        <div class="bar-val">{{ row[1] }}</div>
+        <div class="bar-fill" style="height:{{ [(row[1] / max_cnt * 120)|int, 4]|max }}px;"></div>
+        <div class="bar-label">{{ row[0].strftime('%d %b') if row[0] else row[0] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:var(--soft);font-size:0.84rem;">No messages in the last 7 days. Start chatting!</div>
+    {% endif %}
+  </div>
+
+  <!-- Model usage -->
+  {% if models %}
+  <div class="model-table-card">
+    <div class="section-title" style="padding:16px 18px 0;">🤖 Models Used</div>
+    <div class="mt-head"><span>Model</span><span style="text-align:right;">Requests</span><span>Usage</span></div>
+    {% set max_model = models[0][1] if models else 1 %}
+    {% for model, cnt in models %}
+    <div class="mt-row">
+      <span class="model-name">{{ model }}</span>
+      <span class="model-count">{{ cnt }}</span>
+      <div class="model-bar-wrap"><div class="model-bar-fill" style="width:{{ (cnt/max_model*100)|int }}%;"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Upgrade CTA if not elite -->
+  {% if plan != 'elite' %}
+  <div class="upgrade-cta">
+    <div class="upgrade-cta-text">
+      <h3>Unlock more with a Premium Plan</h3>
+      <p>Get up to 15,000 credits/day, GPT-4o, Claude Opus, and Gemini advanced features.</p>
+    </div>
+    <a href="/pricing" class="upgrade-cta-btn">⚡ Upgrade Now →</a>
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>

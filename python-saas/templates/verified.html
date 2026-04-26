@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Email Verified</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--void:#020408;--surface:#0c1018;--raised:#111620;--border:rgba(255,255,255,0.06);--text:#ddeeff;--soft:#5a7a9a;--gold:#f59e0b;--gglow:rgba(245,158,11,0.25);--green:#34d399;--red:#f87171;}
+html,body{min-height:100vh;background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;display:grid;place-items:center;padding:20px;}
+.bg{position:fixed;inset:0;background:radial-gradient(ellipse 500px 400px at 50% 40%,{% if success %}rgba(52,211,153,0.07){% else %}rgba(248,113,113,0.07){% endif %},transparent);}
+.card{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:48px 40px;text-align:center;max-width:420px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,0.5);}
+.icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;}
+{% if success %}.icon{background:rgba(52,211,153,0.1);border:2px solid rgba(52,211,153,0.3);box-shadow:0 0 30px rgba(52,211,153,0.15);}{% else %}.icon{background:rgba(248,113,113,0.1);border:2px solid rgba(248,113,113,0.3);}{% endif %}
+h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;margin-bottom:10px;letter-spacing:-0.03em;}
+{% if success %}h1 span{color:var(--green);}{% else %}h1 span{color:var(--red);}{% endif %}
+p{font-size:0.85rem;color:var(--soft);line-height:1.7;margin-bottom:24px;}
+.cta{display:inline-flex;align-items:center;gap:7px;padding:12px 28px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0500;border-radius:11px;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.88rem;text-decoration:none;transition:opacity 0.2s;box-shadow:0 4px 20px var(--gglow);}
+.cta:hover{opacity:0.88;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="card">
+  {% if success %}
+  <div class="icon">✉️</div>
+  <h1>Email <span>Verified!</span></h1>
+  <p>Your email address has been successfully verified. You now have full access to NexusAI with a verified account.</p>
+  <a href="/login" class="cta">Sign In to NexusAI →</a>
+  {% else %}
+  <div class="icon">⚠️</div>
+  <h1>Link <span>Expired</span></h1>
+  <p>This verification link is invalid or has expired. Please register again or request a new verification link from your profile.</p>
+  <a href="/login" class="cta">Back to Login →</a>
+  {% endif %}
+</div>
+</body>
+</html>

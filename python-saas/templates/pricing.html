@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#020408;--surface:#0c1018;--raised:#111620;
+  --border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.1);
+  --text:#ddeeff;--soft:#5a7a9a;--dim:#3a5a7a;
+  --gold:#f59e0b;--gglow:rgba(245,158,11,0.2);
+  --violet:#8b5cf6;--vglow:rgba(139,92,246,0.18);
+  --blue:#3b82f6;--bglow:rgba(59,130,246,0.18);
+  --green:#34d399;--red:#f87171;
+}
+*{scrollbar-width:thin;scrollbar-color:var(--raised) transparent;}
+html,body{background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+.bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 800px 600px at 80% 10%,rgba(139,92,246,0.06),transparent),
+              radial-gradient(ellipse 600px 500px at 10% 90%,rgba(245,158,11,0.05),transparent);}
+.page{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:28px 20px 60px;}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--soft);text-decoration:none;
+  font-size:0.81rem;font-weight:600;padding:7px 13px;background:var(--raised);
+  border:1px solid var(--border);border-radius:9px;transition:all 0.2s;}
+.back:hover{color:var(--gold);border-color:rgba(245,158,11,0.3);}
+.page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;}
+.page-title span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+.hero{text-align:center;margin-bottom:40px;}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;line-height:1.15;margin-bottom:12px;}
+.hero p{font-size:0.95rem;color:var(--soft);max-width:480px;margin:0 auto;}
+
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:32px;}
+
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;
+  display:flex;flex-direction:column;transition:transform 0.2s,border-color 0.2s;}
+.plan-card:hover{transform:translateY(-3px);}
+.plan-card.popular{border-color:rgba(139,92,246,0.4);box-shadow:0 0 30px rgba(139,92,246,0.1);}
+.plan-card.elite-card{border-color:rgba(245,158,11,0.4);box-shadow:0 0 30px var(--gglow);}
+
+.plan-head{padding:22px 20px 18px;border-bottom:1px solid var(--border);}
+.plan-badge-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.plan-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.plan-icon.free{background:rgba(107,114,128,0.15);}
+.plan-icon.basic{background:rgba(59,130,246,0.15);}
+.plan-icon.medium{background:rgba(139,92,246,0.15);}
+.plan-icon.elite{background:rgba(245,158,11,0.15);}
+.popular-chip{font-size:0.58rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;
+  padding:2px 8px;border-radius:20px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:var(--violet);}
+.plan-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:800;margin-bottom:6px;}
+.plan-price{font-family:'JetBrains Mono',monospace;}
+.plan-price .amount{font-size:2rem;font-weight:700;line-height:1;}
+.plan-price .period{font-size:0.75rem;color:var(--soft);}
+.plan-credits{margin-top:10px;font-size:0.75rem;color:var(--soft);
+  background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:5px 9px;display:inline-block;}
+
+.plan-body{padding:18px 20px;flex:1;}
+.feat-list{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+.feat-item{display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;line-height:1.4;}
+.feat-check{color:var(--green);flex-shrink:0;margin-top:1px;}
+.feat-x{color:var(--dim);flex-shrink:0;margin-top:1px;}
+.feat-dim{color:var(--soft);}
+
+.model-row{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:10px;}
+.model-label{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin-bottom:3px;}
+.model-name{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--text);}
+
+.plan-foot{padding:0 20px 20px;}
+.checkout-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:11px;
+  border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.87rem;
+  cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.checkout-btn.free-btn{background:var(--raised);border:1px solid var(--border);color:var(--soft);}
+.checkout-btn.free-btn:hover{border-color:var(--borderhi);color:var(--text);}
+.checkout-btn.basic-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 4px 16px var(--bglow);}
+.checkout-btn.basic-btn:hover{opacity:0.88;transform:translateY(-1px);}
+.checkout-btn.medium-btn{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;box-shadow:0 4px 16px var(--vglow);}
+.checkout-btn.medium-btn:hover{opacity:0.88;transform:translateY(-1px);}
+.checkout-btn.elite-btn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0500;box-shadow:0 4px 16px var(--gglow);}
+.checkout-btn.elite-btn:hover{opacity:0.88;transform:translateY(-1px);}
+.current-badge{display:flex;align-items:center;justify-content:center;width:100%;padding:11px;
+  border-radius:10px;border:1px solid var(--green);color:var(--green);font-weight:700;font-size:0.85rem;background:rgba(52,211,153,0.06);}
+
+.credit-table{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:24px;}
+.ct-head{padding:14px 18px;border-bottom:1px solid var(--border);font-family:'Playfair Display',serif;font-size:0.9rem;font-weight:800;}
+.ct-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 18px;border-bottom:1px solid var(--border);font-size:0.82rem;align-items:center;}
+.ct-row:last-child{border-bottom:none;}
+.ct-action{color:var(--soft);}
+.ct-cost{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--gold);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);padding:2px 9px;border-radius:20px;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <div class="topbar">
+    <a href="/" class="back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Dashboard
+    </a>
+    <div class="page-title">Choose Your <span>Plan</span></div>
+  </div>
+
+  <div class="hero">
+    <h1>Simple, transparent pricing</h1>
+    <p>All plans include a daily credit budget. Credits refill every 24 hours.</p>
+  </div>
+
+  <div class="plans-grid">
+
+    <!-- FREE -->
+    <div class="plan-card">
+      <div class="plan-head">
+        <div class="plan-badge-row">
+          <div class="plan-icon free">⚡</div>
+        </div>
+        <div class="plan-name">Free</div>
+        <div class="plan-price"><span class="amount">$0</span><span class="period">/mo</span></div>
+        <div class="plan-credits">50 credits / day</div>
+      </div>
+      <div class="plan-body">
+        <div class="model-row"><div class="model-label">Chat Model</div><div class="model-name">Gemini 1.5 Flash</div></div>
+        <div class="model-row"><div class="model-label">Code Model</div><div class="model-name">Gemini 1.5 Flash</div></div>
+        <ul class="feat-list">
+          <li class="feat-item"><span class="feat-check">✓</span> Basic AI chat</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Grammar checker</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Translator</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Basic notes</li>
+          <li class="feat-item"><span class="feat-x">✗</span> <span class="feat-dim">Advanced models</span></li>
+          <li class="feat-item"><span class="feat-x">✗</span> <span class="feat-dim">Image generation</span></li>
+        </ul>
+      </div>
+      <div class="plan-foot">
+        {% if current_plan == 'free' %}
+        <div class="current-badge">✓ Current Plan</div>
+        {% else %}
+        <div class="current-badge" style="border-color:var(--border);color:var(--soft);">Free Tier</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- BASIC -->
+    <div class="plan-card">
+      <div class="plan-head">
+        <div class="plan-badge-row">
+          <div class="plan-icon basic">🚀</div>
+        </div>
+        <div class="plan-name">Basic</div>
+        <div class="plan-price"><span class="amount" style="color:var(--blue);">$9.99</span><span class="period">/mo</span></div>
+        <div class="plan-credits">1,000 credits / day</div>
+      </div>
+      <div class="plan-body">
+        <div class="model-row"><div class="model-label">Chat Model</div><div class="model-name">GPT-4o mini</div></div>
+        <div class="model-row"><div class="model-label">Code Model</div><div class="model-name">Claude 3 Haiku</div></div>
+        <ul class="feat-list">
+          <li class="feat-item"><span class="feat-check">✓</span> GPT-4o mini chat</li>
+          <li class="feat-item"><span class="feat-check">✓</span> DALL·E 3 images</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Quiz &amp; flashcards</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Summarize &amp; explain</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Claude Haiku code</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Priority support</li>
+        </ul>
+      </div>
+      <div class="plan-foot">
+        {% if current_plan == 'basic' %}
+        <div class="current-badge">✓ Current Plan</div>
+        {% else %}
+        <form method="POST" action="/checkout/basic">
+          <button type="submit" class="checkout-btn basic-btn">Get Basic →</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- MEDIUM -->
+    <div class="plan-card popular">
+      <div class="plan-head">
+        <div class="plan-badge-row">
+          <div class="plan-icon medium">💎</div>
+          <span class="popular-chip">Most Popular</span>
+        </div>
+        <div class="plan-name">Medium</div>
+        <div class="plan-price"><span class="amount" style="color:var(--violet);">$29.99</span><span class="period">/mo</span></div>
+        <div class="plan-credits">4,000 credits / day</div>
+      </div>
+      <div class="plan-body">
+        <div class="model-row"><div class="model-label">Chat Model</div><div class="model-name">GPT-4o</div></div>
+        <div class="model-row"><div class="model-label">Code Model</div><div class="model-name">Claude 3.5 Sonnet</div></div>
+        <ul class="feat-list">
+          <li class="feat-item"><span class="feat-check">✓</span> GPT-4o chat</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Claude Sonnet code</li>
+          <li class="feat-item"><span class="feat-check">✓</span> DALL·E 3 images</li>
+          <li class="feat-item"><span class="feat-check">✓</span> All Basic features</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Voice clone</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Video analysis</li>
+        </ul>
+      </div>
+      <div class="plan-foot">
+        {% if current_plan == 'medium' %}
+        <div class="current-badge">✓ Current Plan</div>
+        {% else %}
+        <form method="POST" action="/checkout/medium">
+          <button type="submit" class="checkout-btn medium-btn">Get Medium →</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ELITE -->
+    <div class="plan-card elite-card">
+      <div class="plan-head">
+        <div class="plan-badge-row">
+          <div class="plan-icon elite">👑</div>
+        </div>
+        <div class="plan-name">Elite</div>
+        <div class="plan-price"><span class="amount" style="color:var(--gold);">$99.99</span><span class="period">/mo</span></div>
+        <div class="plan-credits">15,000 credits / day</div>
+      </div>
+      <div class="plan-body">
+        <div class="model-row"><div class="model-label">Chat + Code</div><div class="model-name">GPT-4o + Claude Opus</div></div>
+        <div class="model-row"><div class="model-label">Images + Video</div><div class="model-name">Gemini 2.0 Flash</div></div>
+        <ul class="feat-list">
+          <li class="feat-item"><span class="feat-check">✓</span> All Medium features</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Claude Opus code</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Gemini image gen</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Gemini video analysis</li>
+          <li class="feat-item"><span class="feat-check">✓</span> 15,000 credits/day</li>
+          <li class="feat-item"><span class="feat-check">✓</span> Dedicated support</li>
+        </ul>
+      </div>
+      <div class="plan-foot">
+        {% if current_plan == 'elite' %}
+        <div class="current-badge">✓ Current Plan</div>
+        {% else %}
+        <form method="POST" action="/checkout/elite">
+          <button type="submit" class="checkout-btn elite-btn">Get Elite →</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Credit Costs Notice -->
+  <div class="credit-table">
+    <div class="ct-head">⚡ Dynamic Credit Costs</div>
+    <div style="padding:16px 20px;font-size:0.85rem;color:var(--soft);line-height:1.6;">
+      To provide the most powerful AI models, credit costs are scaled to the API costs of your current plan. 
+      <strong style="color:var(--text);">Example:</strong> The Basic plan uses cost-effective models (e.g. 5 credits/chat), while the Elite plan gives you access to flagship models like Claude Opus and Gemini 2.0 (e.g. 50 credits/chat). 
+      <br><br>
+      You can view your exact, plan-specific credit costs at any time from your Dashboard.
+    </div>
+  </div>
+</div>
+</body>
+</html>

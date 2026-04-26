@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Bookmarks</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#020408;--surface:#0c1018;--raised:#111620;--border:rgba(255,255,255,0.06);--borderhi:rgba(255,255,255,0.1);
+  --text:#ddeeff;--muted:#1e2d42;--soft:#5a7a9a;--dim:#3a5a7a;
+  --gold:#f59e0b;--gglow:rgba(245,158,11,0.2);--violet:#8b5cf6;--red:#f87171;--green:#34d399;
+}
+*{scrollbar-width:thin;scrollbar-color:var(--raised) transparent;}
+html,body{background:var(--void);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 600px 400px at 70% 30%,rgba(245,158,11,0.05),transparent);}
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:28px 20px 60px;}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:30px;flex-wrap:wrap;}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--soft);text-decoration:none;font-size:0.81rem;font-weight:600;padding:7px 13px;background:var(--raised);border:1px solid var(--border);border-radius:9px;transition:all 0.2s;}
+.back:hover{color:var(--gold);border-color:rgba(245,158,11,0.3);}
+.page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;}
+.page-title span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+.bm-list{display:flex;flex-direction:column;gap:12px;}
+.bm-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all 0.2s;}
+.bm-card:hover{border-color:rgba(245,158,11,0.2);transform:translateY(-2px);}
+.bm-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.bm-icon{width:30px;height:30px;border-radius:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.bm-meta{flex:1;min-width:0;}
+.bm-note{font-weight:600;font-size:0.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bm-date{font-family:'JetBrains Mono',monospace;font-size:0.63rem;color:var(--dim);margin-top:1px;}
+.bm-acts{display:flex;gap:6px;flex-shrink:0;}
+.bm-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:0.72rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s;font-family:'Outfit',sans-serif;border:1px solid var(--border);}
+.bm-btn.view{background:var(--raised);color:var(--text);}
+.bm-btn.view:hover{border-color:var(--gold);color:var(--gold);}
+.bm-btn.del{background:none;border-color:transparent;color:var(--dim);}
+.bm-btn.del:hover{color:var(--red);border-color:rgba(248,113,113,0.3);}
+.bm-body{padding:14px 18px;}
+.bm-user-msg{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:6px;}
+.bm-user-msg::before{content:'You: ';color:var(--gold);}
+.bm-bot-msg{font-size:0.8rem;color:var(--soft);line-height:1.6;max-height:80px;overflow:hidden;position:relative;}
+.bm-bot-msg::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,var(--surface));}
+
+.empty{text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:18px;}
+.empty-icon{font-size:48px;margin-bottom:14px;}
+.empty h3{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:800;margin-bottom:7px;}
+.empty p{font-size:0.83rem;color:var(--soft);line-height:1.65;}
+
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;background:var(--raised);border:1px solid rgba(245,158,11,0.4);border-radius:11px;padding:11px 17px;font-size:0.79rem;font-weight:600;color:var(--gold);transform:translateY(20px);opacity:0;transition:all 0.22s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <div class="topbar">
+    <a href="/" class="back">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Dashboard
+    </a>
+    <div class="page-title">🔖 <span>Bookmarks</span></div>
+    <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--dim);">{{ bookmarks|length }} saved</span>
+  </div>
+
+  {% if bookmarks %}
+  <div class="bm-list">
+    {% for bm in bookmarks %}
+    <div class="bm-card" id="bm-{{ bm[0] }}">
+      <div class="bm-head">
+        <div class="bm-icon">🔖</div>
+        <div class="bm-meta">
+          <div class="bm-note">{{ bm[1] or 'Bookmarked message' }}</div>
+          <div class="bm-date">{{ bm[2].strftime('%d %b %Y · %H:%M') if bm[2] else '' }}</div>
+        </div>
+        <div class="bm-acts">
+          <a href="/chat/{{ bm[5] }}" class="bm-btn view">View Chat</a>
+          <button class="bm-btn del" onclick="deleteBM({{ bm[0] }})">🗑</button>
+        </div>
+      </div>
+      <div class="bm-body">
+        {% if bm[3] %}<div class="bm-user-msg">{{ bm[3][:120] }}{% if bm[3]|length > 120 %}…{% endif %}</div>{% endif %}
+        {% if bm[4] %}<div class="bm-bot-msg">{{ bm[4][:200]|striptags }}{% if bm[4]|length > 200 %}…{% endif %}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">🔖</div>
+    <h3>No bookmarks yet</h3>
+    <p>Hover over any AI response in a chat and click the bookmark button to save it here for quick reference.</p>
+  </div>
+  {% endif %}
+</div>
+<div id="toast"></div>
+<script>
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.style.color=ok?'var(--gold)':'var(--red)';
+  t.style.borderColor=ok?'rgba(245,158,11,0.4)':'rgba(248,113,113,0.4)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+async function deleteBM(id){
+  if(!confirm('Remove this bookmark?'))return;
+  try{
+    const res=await fetch(`/api/bookmark/${id}/delete`,{method:'POST'});
+    const d=await res.json();
+    if(d.ok){document.getElementById('bm-'+id)?.remove();toast('Bookmark removed');}
+  }catch(e){toast('Error',false);}
+}
+</script>
+</body>
+</html>

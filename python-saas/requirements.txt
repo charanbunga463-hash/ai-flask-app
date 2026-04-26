@@ -15,8 +15,3 @@ pyotp
 qrcode
 Pillow
 validators
-anthropic
-google-generativeai
-stripe
-pytesseract
-redis
